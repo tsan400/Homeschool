@@ -1,0 +1,58 @@
+# Math skills, in teaching order. Each skill has levels 1-5 (see `levels`).
+# Reaching the top of level 5 marks a skill mastered: it moves to spaced review
+# and the next unmastered skill in this list becomes active.
+# `id` must match a generator in src/hs/generators/math.py.
+# `form`: value (any equal number), lowest (fractions in lowest terms),
+#         remainder (division "q R r").
+subject: math
+skills:
+  - {id: add_sub, strand: whole numbers, grade: 3, form: value, name: Multi-digit addition and subtraction,
+     levels: [2-digit add, 2-digit add/sub with regrouping, 3-digit, 4-digit, subtracting across zeros]}
+  - {id: mult_facts, strand: whole numbers, grade: 3, form: value, name: Multiplication facts,
+     levels: ["x0,1,2,5,10", "x3,4", "x6,7", "x8,9", mixed to 12]}
+  - {id: div_facts, strand: whole numbers, grade: 3, form: value, name: Division facts,
+     levels: ["/2,5,10", "/3,4", "/6,7", "/8,9", mixed to 12]}
+  - {id: mult_multi, strand: whole numbers, grade: 4, form: value, name: Multi-digit multiplication,
+     levels: [2x1 digit, 3x1, 2x2, 3x2, 4x2]}
+  - {id: long_div, strand: whole numbers, grade: 4, form: remainder, name: Long division,
+     levels: [2-digit by 1 exact, 2-digit by 1 with remainder, 3-digit by 1, 4-digit by 1, by 2-digit divisor]}
+  - {id: frac_equiv, strand: fractions, grade: 4, form: value, name: Equivalent fractions,
+     levels: [scale by 2, scale by 2-5, larger denominators, scale down, mixed directions]}
+  - {id: frac_simplify, strand: fractions, grade: 4, form: lowest, name: Simplifying fractions,
+     levels: [halves, small factors, larger factors, to mixed numbers, mixed]}
+  - {id: frac_add_like, strand: fractions, grade: 4, form: lowest, name: Adding and subtracting like denominators,
+     levels: [add under 1, subtract, sums over 1, mixed numbers, mixed numbers with borrowing]}
+  - {id: frac_add_unlike, strand: fractions, grade: 5, form: lowest, name: Adding and subtracting unlike denominators,
+     levels: [one denominator divides the other, with subtraction, coprime denominators, general LCD, mixed numbers]}
+  - {id: frac_mult, strand: fractions, grade: 5, form: lowest, name: Multiplying fractions,
+     levels: [whole x unit fraction, whole x fraction, fraction x fraction, with cancelling, mixed numbers]}
+  - {id: frac_div, strand: fractions, grade: 5, form: lowest, name: Dividing fractions,
+     levels: [unit fraction / whole, whole / unit fraction, fraction / fraction, mixed / fraction, mixed / mixed]}
+  - {id: dec_add_sub, strand: decimals, grade: 5, form: value, name: Adding and subtracting decimals,
+     levels: [tenths, hundredths, subtraction, mixed places, whole minus decimal]}
+  - {id: dec_mult, strand: decimals, grade: 5, form: value, name: Multiplying decimals,
+     levels: [decimal x whole, tenths x tenths, hundredths x whole, 2-place x 1-place, larger factors]}
+  - {id: order_ops, strand: expressions, grade: 5, form: value, name: Order of operations,
+     levels: [a + b x c, parentheses, four operations, with exponents, nested parentheses]}
+  - {id: dec_div, strand: decimals, grade: 6, form: value, name: Dividing decimals,
+     levels: [decimal / whole, whole / decimal, tenths / tenths, hundredths, 2-digit divisor]}
+  - {id: exponents, strand: expressions, grade: 6, form: value, name: Exponents,
+     levels: [squares, cubes, powers of 10, expressions, negative bases]}
+  - {id: ratio, strand: ratios, grade: 6, form: value, name: Ratios and proportions,
+     levels: [scale up, scale down, missing term, unit rate, general proportion]}
+  - {id: percent, strand: ratios, grade: 6, form: value, name: Percents,
+     levels: [10/25/50% of a number, any percent of a number, what percent, find the whole, percent change]}
+  - {id: int_add_sub, strand: integers, grade: 6, form: value, name: Adding and subtracting integers,
+     levels: [adding a negative, subtracting, mixed signs, three terms, larger numbers]}
+  - {id: one_step_eq, strand: equations, grade: 6, form: value, name: One-step equations,
+     levels: [x + a = b, x - a = b, ax = b, x / a = b, with negatives]}
+  - {id: int_mult_div, strand: integers, grade: 7, form: value, name: Multiplying and dividing integers,
+     levels: [multiply, divide, mixed, three factors, combined operations]}
+  - {id: two_step_eq, strand: equations, grade: 7, form: value, name: Two-step equations,
+     levels: [ax + b = c, ax - b = c, negative coefficients, x/a + b = c, negative solutions]}
+  - {id: multi_step_eq, strand: equations, grade: 8, form: value, name: Variables on both sides,
+     levels: [ax + b = cx, ax + b = cx + d, negative coefficients, distributive property, both sides distributed]}
+  - {id: pythagorean, strand: geometry, grade: 8, form: value, name: Pythagorean theorem,
+     levels: [hypotenuse of 3-4-5 family, missing leg, other triples, scaled triples, mixed]}
+  - {id: slope, strand: graphs, grade: 8, form: lowest, name: Slope,
+     levels: [positive whole slope, negative slope, fractional slope, fractional negative, from an equation]}

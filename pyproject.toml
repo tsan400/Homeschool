@@ -1,0 +1,35 @@
+[project]
+name = "hs"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Claude", email = "noreply@anthropic.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=1.11.0",
+    "opencv-python-headless>=5.0.0.93",
+    "pillow>=12.3.0",
+    "pypdfium2>=5.13.0",
+    "pyyaml>=6.0.3",
+    "segno>=1.6.6",
+    "sympy>=1.14.0",
+    "typer>=0.27.2",
+    "typst>=0.15.0",
+]
+
+[project.scripts]
+hs = "hs:main"
+
+[build-system]
+requires = ["uv_build>=0.8.17,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["tests"]

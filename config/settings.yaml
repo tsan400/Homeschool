@@ -1,0 +1,19 @@
+# Engine settings. Edit freely; changes apply on the next command.
+model: claude-opus-5-5          # Claude model used to read handwriting
+confidence_threshold: 0.85      # transcriptions below this go to the review queue
+scan_dpi: 200
+
+levels:
+  up_pct: 0.85          # session score that counts toward a level-up
+  up_sessions: 3        # consecutive qualifying sessions needed
+  down_pct: 0.60        # session score that counts toward a level-down
+  down_sessions: 2      # consecutive low sessions needed
+  min_problems: 4       # a session needs at least this many problems of the skill to count
+  too_easy_fast_track: 0.5   # >= up_pct AND more than this share marked "too easy" -> level up now
+
+math:
+  problems_per_day: 15
+  review_fraction: 0.2  # share of problems spent on spaced review of mastered skills
+  active_skills: 3      # how many unmastered skills to work on at once
+  min_per_skill: 4
+  max_stuck_examples: 3 # worked examples per day for "stuck" problems

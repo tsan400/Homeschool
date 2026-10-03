@@ -1,0 +1,14 @@
+# One entry per child. `id` is used in folder names and QR codes; keep it lowercase, no spaces.
+# math_grade: where math starts. Skills below this grade begin as mastered (placement refines it).
+bible_translation: ESV
+daily_minutes: [45, 60]
+
+students:
+  - id: timothy
+    name: Timothy
+    grade: 4
+    math_grade: 5
+  - id: hannah
+    name: Hannah
+    grade: 7
+    math_grade: 7

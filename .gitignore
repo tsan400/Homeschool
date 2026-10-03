@@ -1,0 +1,7 @@
+__pycache__/
+.venv/
+.pytest_cache/
+# Children's work and results stay local
+data/
+inbox/
+hs.db
