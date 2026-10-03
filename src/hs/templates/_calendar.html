@@ -1,0 +1,18 @@
+{# expects: cal, s (student), mini (bool) #}
+<table class="cal{% if mini %} mini{% endif %}">
+  <tr>{% for d in ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] %}<th>{{ d if not mini else d[0] }}</th>{% endfor %}</tr>
+  {% for week in cal.weeks %}
+  <tr>
+    {% for c in week %}
+    <td class="{% if not c.in_month %}out{% endif %}{% if c.today %} today{% endif %}">
+      <a class="day" href="/students/{{ s.id }}/{{ c.date.isoformat() }}" aria-label="{{ c.date.strftime('%A %B %d') }}">
+        <span class="num">{{ c.date.day }}</span>
+        {% for w in c.sheets %}
+          <span class="pill {{ w.state[0] }}" title="{{ w.kind_label }}: {{ w.state[1] }}">{% if mini %}{{ w.state[2] }}{% else %}{% if w.kind != 'daily' %}{{ w.kind_label }}: {% endif %}{{ w.state[1] }}{% endif %}</span>
+        {% endfor %}
+      </a>
+    </td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>

@@ -1,7 +1,9 @@
 __pycache__/
 .venv/
 .pytest_cache/
-# Children's work and results stay local
+# Families' data (database and encrypted files) never goes in the repo
+hs.db
+hs.db-*
+files/
 data/
 inbox/
-hs.db

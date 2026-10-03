@@ -2,6 +2,9 @@
 model: claude-opus-5-5          # Claude model used to read handwriting
 confidence_threshold: 0.85      # transcriptions below this go to the review queue
 scan_dpi: 200
+max_upload_mb: 40
+bible_translation: ESV         # Phase 3
+daily_minutes: [45, 60]
 
 levels:
   up_pct: 0.85          # session score that counts toward a level-up

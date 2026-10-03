@@ -1,4 +1,5 @@
-"""Paths and YAML config. Config and content live in the repo; data lives in HS_HOME (default: repo root)."""
+"""Paths and YAML config. Config and content live in the repo; data lives in HS_HOME (default: repo root).
+Families and children live in the database, not here."""
 
 import os
 from functools import cache
@@ -15,35 +16,23 @@ def home() -> Path:
     return Path(os.environ.get("HS_HOME", REPO))
 
 
-def data_dir() -> Path:
-    return home() / "data"
-
-
-def inbox_dir() -> Path:
-    d = home() / "inbox"
-    d.mkdir(parents=True, exist_ok=True)
-    return d
-
-
 def db_path() -> Path:
     return home() / "hs.db"
 
 
-def day_dir(date: str, student: str) -> Path:
-    d = data_dir() / date / student
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+def files_dir() -> Path:
+    """Encrypted files, one folder per family (see vault.py)."""
+    return home() / "files"
+
+
+def base_url() -> str:
+    """Public address of the portal, used in sign-in emails."""
+    return os.environ.get("HS_BASE_URL", "http://localhost:8000").rstrip("/")
 
 
 @cache
 def settings() -> dict:
     return yaml.safe_load((CONFIG / "settings.yaml").read_text())
-
-
-@cache
-def students() -> dict[str, dict]:
-    cfg = yaml.safe_load((CONFIG / "students.yaml").read_text())
-    return {s["id"]: s for s in cfg["students"]}
 
 
 @cache

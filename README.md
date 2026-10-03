@@ -1,43 +1,92 @@
-# hs: personal homeschool engine
+# hs: homeschool engine and parent portal
 
-Each morning, print one paper packet per child. In the evening, scan the finished pages.
-The engine grades them, you approve the results, and the next day's packet is set at the edge
-of each child's ability.
+Each morning, parents print one paper packet per child. When the work is done, they upload a
+scan or phone photos of the pages. The engine grades them, the parent checks and approves the
+results, and the next day's packet is set at the edge of each child's ability.
 
-Phase 1 covers Math only.
+The parent portal is a website shared by many families. Each family has its own account, and
+sees only its own children and scans.
 
-## Setup
+- **Home:** one button prints every child's packet for today. A small calendar for each child
+  shows which days are done, waiting to be checked, missing pages, or not turned in.
+- **Child page:** a full month calendar. Click any day to see the packet, the answer key, the
+  scanned pages, and each answer next to the image of what the child wrote. Fix anything
+  misread, then approve.
+- **Upload scans:** PDFs or photos, any order, any orientation, several children at once.
+  Grading runs in the background and takes about a minute.
+- **Family:** children, time zone, invite another parent, delete everything.
+
+Math is the only subject so far.
+
+## Run it locally
 
 ```sh
 uv sync
-uv run hs keygen               # once; save the key in your password manager
-export HS_SCAN_KEY=...         # the key from keygen: encrypts every saved scan image
-export ANTHROPIC_API_KEY=...   # used only to read handwriting
+export HS_MASTER_KEY=$(uv run hs keygen)   # encrypts every family's files; keep a copy safe
+export ANTHROPIC_API_KEY=...               # reads handwriting
+uv run hs invite you@example.com           # sign-in is invite-only
+uv run hs serve                            # http://localhost:8000
 ```
 
-Edit `config/students.yaml` (children, starting grade) and `config/settings.yaml`
-(model, confidence threshold, level rules, problems per day).
+Without `RESEND_API_KEY`, sign-in emails are printed to the server log, so you can click the
+link from there.
 
-## Daily loop
+## Hosting
+
+The portal runs as one container with a persistent disk (`Dockerfile`, `fly.toml`). With
+[Fly.io](https://fly.io):
 
 ```sh
-hs print                 # data/<today>/<child>/packet.pdf and key.pdf
-# ...children work on paper; scan each child's pages to inbox/ (PDF or photos)...
-hs grade                 # grades everything in inbox/ (or: hs grade path/to/scan.pdf)
-hs review                # confirm flagged reads, override grades, approve -> levels update
-hs status                # current levels and what's waiting
+fly launch --no-deploy --copy-config       # pick your app name; update app and HS_BASE_URL in fly.toml
+fly volumes create hs_data --size 10
+fly secrets set HS_MASTER_KEY=$(uv run hs keygen) ANTHROPIC_API_KEY=... \
+                RESEND_API_KEY=... HS_MAIL_FROM="Homeschool <portal@yourdomain.com>"
+fly deploy
+fly ssh console -C "hs invite you@example.com"
 ```
 
-Other options:
+- **Email:** [Resend](https://resend.com) sends the sign-in links. Verify your domain there
+  and use it in `HS_MAIL_FROM`.
+- **Invites:** families can only sign in once invited, because every graded page costs an API
+  call. `hs invite <email>` starts a new family. Parents can invite a co-parent from the
+  Family page. `hs families` lists accounts.
+- **Backups:** Fly snapshots volumes daily and keeps them for 5 days. For longer retention,
+  copy `/data` somewhere else regularly. The files are already encrypted, but the master key
+  must be kept separately or the copy is useless.
+- **Scale:** SQLite on one machine comfortably serves hundreds of families. Grading is the
+  slow part: one worker reads one upload at a time. Past that, the next steps are Postgres,
+  S3-compatible storage, and more workers.
 
-- `hs print --placement` prints a placement packet. It has two problems per skill around the
-  child's grade. Approving it sets starting levels: both right means mastered, one right
-  means level 3, none right means level 1.
-- `hs print --test` prints a 10-problem calibration packet that never changes levels. Use it
-  to check your printer and phone scanner before the kids start.
-- `hs print --fresh` throws away today's unscanned packet and makes a new one.
-- `hs curriculum [--grade 7]` lists the K-12 sequence. A `*` marks topics the engine
-  already generates and grades.
+## Scan storage and privacy
+
+Scans are kept, so parents can look back at any day. Every file the portal stores (scans,
+answer crops, packets, answer keys) is encrypted:
+
+- **Encryption:** each family has its own random AES-256-GCM key, stored in the database
+  wrapped by `HS_MASTER_KEY`. A stolen disk or database copy can't be read without the master
+  key, which lives only in the host's secret store.
+- **Binding:** each file is bound to its own name and family. Files can't be swapped between
+  days or families without detection.
+- **Access:** files are decrypted only to answer a signed-in parent's request, and are sent
+  with no-store headers. Every page, PDF, and image checks that it belongs to the signed-in
+  parent's family. Anything else returns "not found", and a page from another family's packet
+  is refused at upload.
+- **Uploads:** a raw upload is kept encrypted until every page has been used, so failed
+  grading can be retried. After that, the portal keeps the straightened page images and the
+  answer crops.
+- **Sign-in:** emailed links work once and expire after 20 minutes. Sessions are signed
+  cookies, and form posts from other sites are refused.
+- **Deleting:** "Delete our account" on the Family page removes the family's rows and files
+  immediately. Volume snapshots age out within 5 days.
+
+What this doesn't cover:
+
+- **Operator access:** you, as the operator, hold the master key, so you could decrypt any
+  family's files. Tell families that.
+- **Anthropic API:** answer crops are sent to the Anthropic API to be read.
+- **Children's data:** before opening this to families beyond your own, publish a privacy
+  policy. It should say what is stored, who can see it, the API use above, and how deletion
+  works. Families should also agree to it.
 
 ## Curriculum
 
@@ -61,32 +110,6 @@ Each topic has a `mode`:
 `skills.yaml` holds the topics the engine currently generates. A test keeps it in the same
 grade and order as the curriculum.
 
-## Scan privacy
-
-Scans are never stored unencrypted by the engine:
-
-- `hs grade` reads an inbox scan, encrypts it to `inbox/<name>.enc`, and overwrites and deletes
-  the original **before** grading starts. All image work happens in memory.
-- The only images it keeps are the full scan (`scan.enc`) and the answer-box crops
-  (`crops/NN.enc`). Both use AES-256-GCM with `HS_SCAN_KEY`, and each file is bound to its own
-  name, so files can't be swapped or edited without detection.
-- Once every page has been used, the `inbox/*.enc` copy is deleted. If a page couldn't be used,
-  or grading crashed, the copy stays and `hs grade` retries it.
-- `hs review` shows crops in a browser tab served from memory on `127.0.0.1`, at a random path,
-  with no-cache headers. No decrypted file is written.
-- Without `HS_SCAN_KEY`, `hs grade` refuses to run and leaves the inbox untouched. If the key
-  is lost, saved crops can't be opened, but grades and levels are unaffected.
-
-What this doesn't cover:
-
-- Anything outside the engine, such as your phone's scan app, cloud sync, or the copy in your
-  photo library.
-- Answer-box crops are sent to the Anthropic API over HTTPS to be read.
-- Deleting a file on an SSD or a copy-on-write filesystem may leave old blocks behind. Full-disk
-  encryption (FileVault, BitLocker, LUKS) covers that, and is worth having anyway.
-- Packets and answer keys are blank worksheets, not scans, and are stored as normal PDFs.
-  `hs.db` and `grades.json` hold the typed transcriptions and scores, not images.
-
 ## How it works
 
 - **Pages.** Each page has corner markers, a QR code (student, date, worksheet, page), five
@@ -99,7 +122,7 @@ What this doesn't cover:
   (`src/hs/generators/math.py`). Grading compares values, so `0.75` matches `3/4`. Fraction
   skills require lowest terms. Division with a remainder takes `12 R3`.
 - **Review.** Reads below `confidence_threshold`, half-filled circles, and answers that can't
-  be understood go to `hs review`. Levels change only when you approve a packet.
+  be understood are highlighted on the day page. Levels change only when a parent approves.
 - **Levels.** Each skill in `content/math/skills.yaml` has levels 1 to 5:
   - 3 sessions in a row at 85% or better moves the child up a level.
   - 2 sessions in a row under 60% moves them down a level.
@@ -113,19 +136,24 @@ What this doesn't cover:
 ## Files
 
 ```
-config/            students and settings (edit these)
-content/math/      curriculum.yaml (K-12 map) and skills.yaml (the generated part)
-src/hs/            cli, planner, generators, render (Typst), scan, read (Claude), grade, review, levels, vault, viewer
-data/YYYY-MM-DD/<child>/   packet.pdf, key.pdf, grades.json, scan.enc, crops/NN.enc   (gitignored)
-inbox/             drop scans here; they are encrypted then shredded on `hs grade`   (gitignored)
-hs.db              SQLite results (gitignored, so back it up)
+config/settings.yaml   engine settings: model, confidence threshold, level rules, packet size
+content/math/          curriculum.yaml (K-12 map) and skills.yaml (the part the engine generates)
+src/hs/                web (portal), accounts, jobs (grading queue), packets, planner, generators,
+                       render (Typst), scan, read (Claude), grade, levels, vault, mail
+src/hs/templates/      portal pages
+HS_HOME/hs.db          SQLite: families, children, levels, results (not in git)
+HS_HOME/files/<family>/   encrypted packets, keys, page images, crops, pending uploads
 ```
 
 ## Tests
 
 ```sh
-uv run pytest            # includes a synthetic filled-in, phone-scanned packet
+uv run pytest
 ```
 
-With `ANTHROPIC_API_KEY` set, `test_live_transcription` also sends the synthetic scan to the
-real API.
+- **Engine tests:** a real packet is filled in, "phone scanned" (perspective, rotation, shadow,
+  noise, JPEG), uploaded, graded, approved and re-planned.
+- **Portal tests:** sign-in, the calendar, the day page, review, and checks that one family
+  can't reach another's data.
+- **Live read:** with `ANTHROPIC_API_KEY` set, `test_live_transcription` sends the synthetic
+  scan to the real API.

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin">
+{% block head %}{% endblock %}
+<title>{% block title %}Homeschool{% endblock %}</title>
+<style>
+:root {
+  --bg: #f7f6f2; --card: #ffffff; --ink: #1f2328; --muted: #6a6f76; --line: #e3e1da;
+  --accent: #2f6f5e; --accent-ink: #ffffff;
+  --done: #dff1e4; --done-ink: #1d6b35; --review: #e2ecfb; --review-ink: #1f4f9a;
+  --partial: #fdf0d5; --partial-ink: #8a5a00; --missing: #fbe3e1; --missing-ink: #9b2c22;
+  --assigned: #eeeeea; --assigned-ink: #4a4f55;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+a { color: var(--accent); }
+header { background: var(--card); border-bottom: 1px solid var(--line); }
+header .wrap { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
+header .brand { font-weight: 700; text-decoration: none; color: var(--ink); margin-right: auto; }
+header nav a { text-decoration: none; margin-left: 14px; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+main.wrap { padding-top: 22px; padding-bottom: 60px; }
+h1 { font-size: 1.6rem; margin: 0 0 6px; }
+h2 { font-size: 1.2rem; margin: 26px 0 10px; }
+.muted { color: var(--muted); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.btn, button { display: inline-block; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+  border-radius: 8px; padding: 8px 14px; font: inherit; text-decoration: none; cursor: pointer; }
+.btn.ghost, button.ghost { background: transparent; color: var(--accent); }
+button.danger { background: #a3332a; border-color: #a3332a; }
+input, select { font: inherit; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); }
+label { display: inline-flex; gap: 6px; align-items: center; }
+.flash { background: var(--done); color: var(--done-ink); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }
+.warn { background: var(--partial); color: var(--partial-ink); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .82rem; white-space: nowrap; }
+.done { background: var(--done); color: var(--done-ink); } .review { background: var(--review); color: var(--review-ink); }
+.partial { background: var(--partial); color: var(--partial-ink); } .missing { background: var(--missing); color: var(--missing-ink); }
+.assigned { background: var(--assigned); color: var(--assigned-ink); }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: .85rem; color: var(--muted); font-weight: 600; }
+.scroll { overflow-x: auto; }
+
+/* calendar */
+.cal { width: 100%; table-layout: fixed; }
+.cal th { text-align: center; }
+.cal td { height: 84px; vertical-align: top; padding: 4px; border: 1px solid var(--line); background: var(--card); }
+.cal td.out { background: transparent; color: #b5b3ac; }
+.cal td.today { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cal a.day { display: block; height: 100%; text-decoration: none; color: inherit; }
+.cal .num { font-size: .85rem; font-weight: 600; }
+.cal .pill { display: block; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; }
+.cal.mini td { height: 46px; }
+.cal.mini .pill { font-size: .8rem; padding: 0 4px; text-align: center; }
+input[type=file] { max-width: 100%; }
+.list > div { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.list > div:last-child { border-bottom: 0; }
+.legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+
+/* scans */
+.pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.pages img { width: 100%; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+img.crop { height: 44px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+tr.flag { background: #fff8e8; }
+td.prompt { min-width: 160px; }
+
+@media (max-width: 640px) {
+  .cal td { height: 58px; } .cal .pill { font-size: .66rem; padding: 1px 3px; }
+  header nav a { margin-left: 0; margin-right: 12px; }
+}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a class="brand" href="/">Homeschool</a>
+  {% if parent %}
+  <nav><a href="/">Home</a><a href="/uploads">Upload scans</a><a href="/family">Family</a></nav>
+  <form method="post" action="/signout"><button class="ghost">Sign out</button></form>
+  {% endif %}
+</div></header>
+<main class="wrap">
+{% set f = flash(request) %}{% if f %}<div class="flash">{{ f }}</div>{% endif %}
+{% block body %}{% endblock %}
+</main>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Homeschool{% endblock %}
+{% block body %}
+<div class="card" style="max-width:440px;margin:40px auto">
+  <h1>Sign in</h1>
+  {% if error %}<div class="warn">{{ error }}</div>{% endif %}
+  {% if sent %}
+    <p>If that email has access, a sign-in link is on its way. It works once and expires in 20 minutes.</p>
+    <p class="muted">Nothing arrived? Check spam, or ask whoever invited you to check the address.</p>
+  {% else %}
+    <p class="muted">We'll email you a link. No password needed. Homeschool is invite-only for now.</p>
+    <form method="post" action="/signin" class="row">
+      <input type="email" name="email" required autocomplete="email" placeholder="you@example.com" style="flex:1">
+      <button>Email me a link</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Homeschool{% endblock %}
+{% block body %}
+<div class="card" style="max-width:440px;margin:40px auto">
+  <h1>Sign in to Homeschool</h1>
+  <form method="post" action="/signin/{{ token }}"><button>Continue</button></form>
+</div>
+{% endblock %}

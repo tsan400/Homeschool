@@ -44,8 +44,8 @@ def plan_daily(con, student: str) -> tuple[list[dict], list[int]]:
     return review + scaffolds + new, [p["id"] for p in stuck]
 
 
-def plan_placement(student: str) -> list[dict]:
-    g = config.students()[student]["math_grade"]
+def plan_placement(con, student: str) -> list[dict]:
+    g = db.student(con, student)["math_grade"]
     return [dict(skill=sk["id"], level=lvl, kind="placement")
             for sk in config.skills() if g - 1 <= sk["grade"] <= g + 1 for lvl in (2, 4)]
 
@@ -61,7 +61,7 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
     if kind == "daily":
         specs, sources = plan_daily(con, student)
     else:
-        specs, sources = (plan_placement(student) if kind == "placement" else plan_test()), []
+        specs, sources = (plan_placement(con, student) if kind == "placement" else plan_test()), []
 
     pages = [{"page": i + 1, "kind": "examples", "sources": sources[j:j + EXAMPLES_PER_PAGE]}
              for i, j in enumerate(range(0, len(sources), EXAMPLES_PER_PAGE))]
@@ -69,7 +69,7 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
     n_pages = -(-len(specs) // L.SLOTS)
     pages += [{"page": first_problem_page + i, "kind": "problems"} for i in range(n_pages)]
 
-    con.execute("INSERT INTO worksheet VALUES (?,?,?,?,?,?,?)",
+    con.execute("INSERT INTO worksheet (id, student, date, subject, kind, status, pages) VALUES (?,?,?,?,?,?,?)",
                 (ws_id, student, date, "math", kind, "printed", json.dumps(pages)))
     seen = set()
     for i, spec in enumerate(specs):

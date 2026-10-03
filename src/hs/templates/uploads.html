@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block head %}{% if busy %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block title %}Upload scans · Homeschool{% endblock %}
+{% block body %}
+<h1>Upload finished pages</h1>
+<div class="card">
+  <form method="post" action="/uploads" enctype="multipart/form-data">
+    <p style="margin-top:0">A PDF from your scanner or phone scan app, or photos of the pages. Pages can be in any order and any way up.
+      You can upload several children's pages at once.</p>
+    <div class="row">
+      <input type="file" name="files" multiple required accept="application/pdf,image/jpeg,image/png">
+      <button>Upload and grade</button>
+    </div>
+    <p class="muted">Up to {{ max_mb }} MB per file. Scans are saved to your family's account, encrypted with your family's own key.</p>
+  </form>
+</div>
+
+<h2>Uploads</h2>
+<div class="card list">
+  {% for u in uploads %}
+    <div>
+      <div class="row" style="justify-content:space-between">
+        <strong style="overflow-wrap:anywhere">{{ u.filename }}</strong>
+        {% if u.status == 'queued' %}<span class="pill assigned">grading…</span>
+        {% elif u.status == 'done' %}<span class="pill done">graded</span>
+        {% elif u.status == 'incomplete' %}<span class="pill partial">some pages unreadable</span>
+        {% else %}<span class="pill missing">failed</span>{% endif %}
+      </div>
+      <div class="muted" style="font-size:.85rem">{{ u.created_at[:16].replace('T',' ') }}</div>
+      <div style="white-space:pre-line">{{ u.report }}</div>
+      {% if u.status in ('error', 'incomplete') %}<form method="post" action="/uploads/{{ u.id }}/retry"><button class="ghost">Retry</button></form>{% endif %}
+    </div>
+  {% else %}
+    <div class="muted">Nothing uploaded yet.</div>
+  {% endfor %}
+{% if busy %}<p class="muted">This page refreshes itself while grading runs. Reading handwriting takes about a minute.</p>{% endif %}
+</div>
+{% endblock %}

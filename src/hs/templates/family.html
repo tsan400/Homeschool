@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Family · Homeschool{% endblock %}
+{% block body %}
+<h1>Family</h1>
+
+<h2>Children</h2>
+<div class="card scroll">
+  <table>
+    <tr><th>Name</th><th>Grade</th><th>Math started at</th><th></th></tr>
+    {% for k in kids %}
+      <tr>
+        <td><input form="kid-{{ k.id }}" name="name" value="{{ k.name }}" required maxlength="40" aria-label="name"></td>
+        <td><input form="kid-{{ k.id }}" name="grade" type="number" min="0" max="12" value="{{ k.grade }}" style="width:5em" aria-label="grade"></td>
+        <td>grade {{ k.math_grade }}</td>
+        <td><form id="kid-{{ k.id }}" method="post" action="/students/{{ k.id }}"><button class="ghost">Save</button> <a href="/students/{{ k.id }}">Open</a></form></td>
+      </tr>
+    {% endfor %}
+  </table>
+  <h3>Add a child</h3>
+  <form method="post" action="/students" class="row">
+    <input name="name" placeholder="First name" required maxlength="40">
+    <label>Grade <input name="grade" type="number" min="0" max="12" required style="width:5em"></label>
+    <label>Math grade <input name="math_grade" type="number" min="0" max="12" required style="width:5em"></label>
+    <button>Add</button>
+  </form>
+  <p class="muted">Use 0 for kindergarten. Math grade is where math starts if your child is ahead or behind: skills below it start as mastered.
+    A placement packet then fine-tunes it.</p>
+</div>
+
+<h2>Settings</h2>
+<div class="card">
+  <form method="post" action="/family" class="row">
+    <label>Family name <input name="name" value="{{ parent.family_name }}" required maxlength="80"></label>
+    <label>Time zone <select name="tz">{% for z in zones %}<option {{ 'selected' if z == parent.tz }}>{{ z }}</option>{% endfor %}</select></label>
+    <button class="ghost">Save</button>
+  </form>
+</div>
+
+<h2>Parents</h2>
+<div class="card">
+  {% for p in parents %}<div>{{ p.email }}</div>{% endfor %}
+  {% for i in invites %}<div class="muted">{{ i.email }} (invited)</div>{% endfor %}
+  <form method="post" action="/family/invite" class="row" style="margin-top:10px">
+    <input type="email" name="email" placeholder="another parent's email" required>
+    <button class="ghost">Invite</button>
+  </form>
+</div>
+
+<h2>Delete everything</h2>
+<div class="card">
+  <p style="margin-top:0">Permanently deletes your family, every child's records, and every saved scan. This can't be undone.</p>
+  <form method="post" action="/family/delete" class="row">
+    <input name="confirm" placeholder="type DELETE" required>
+    <button class="danger">Delete our account</button>
+  </form>
+</div>
+{% endblock %}

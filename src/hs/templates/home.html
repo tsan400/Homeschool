@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>{{ parent.family_name }}</h1>
+<p class="muted">{{ today.strftime("%A, %B ") ~ today.day }}</p>
+
+{% if not kids %}
+  <div class="card">
+    <h2 style="margin-top:0">Add your first child</h2>
+    <p>Go to <a href="/family">Family</a> to add each child and their grade. Then print a placement packet so their math starts at the right level.</p>
+  </div>
+{% else %}
+  <div class="card row">
+    <a class="btn" href="/today.pdf" target="_blank">Print today's packets</a>
+    <a class="btn ghost" href="/uploads">Upload finished pages</a>
+    <span class="muted">One PDF with every child's packet. Scan each child's pages when they're done.</span>
+  </div>
+{% endif %}
+
+{% if to_check %}
+  <h2>Waiting for you to check</h2>
+  <div class="card">
+    {% for w in to_check %}
+      <div class="row" style="justify-content:space-between;padding:4px 0">
+        <a href="/students/{{ w.student }}/{{ w.date }}#{{ w.id }}">{{ w.name }}, {{ w.date }}</a>
+        <span class="pill {{ 'review' if w.status == 'graded' else 'partial' }}">{{ 'Ready to check' if w.status == 'graded' else 'Pages missing' }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% for k in kids %}
+  <h2><a href="/students/{{ k.s.id }}">{{ k.s.name }}</a> <span class="muted" style="font-weight:400">· grade {{ k.s.grade }}</span></h2>
+  <div class="card">
+    <p style="margin-top:0">
+      Today:
+      {% if k.today %}
+        <a href="/students/{{ k.s.id }}/{{ today.isoformat() }}">{{ {'printed':'printed, not turned in yet','partial':'some pages scanned','graded':'graded, ready to check','approved':'done'}[k.today.status] }}</a>
+      {% else %}
+        <span class="muted">no packet yet</span>
+      {% endif %}
+    </p>
+    <p style="margin:0 0 6px"><strong>{{ k.cal.title }}</strong></p>
+    {% with cal=k.cal, s=k.s, mini=true %}{% include "_calendar.html" %}{% endwith %}
+    <p class="muted" style="font-size:.85rem;margin-bottom:0">✓ done · ? to check · ½ pages missing · ✗ not turned in · • assigned</p>
+  </div>
+{% endfor %}
+
+{% if uploads %}
+  <h2>Recent uploads</h2>
+  <div class="card">
+    {% for u in uploads %}
+      <div style="padding:4px 0"><strong>{{ u.filename }}</strong> <span class="muted">{{ u.created_at[:16].replace('T',' ') }}</span>
+        {% if u.status == 'queued' %}<span class="pill assigned">grading…</span>
+        {% elif u.status == 'done' %}<span class="pill done">graded</span>
+        {% else %}<span class="pill missing">{{ u.status }}</span>{% endif %}
+        <div class="muted" style="white-space:pre-line">{{ u.report }}</div></div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

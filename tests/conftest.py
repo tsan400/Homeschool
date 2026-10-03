@@ -1,14 +1,22 @@
 import pytest
 
-from hs import config, db, levels, vault
+from hs import accounts, db, vault
 
 
 @pytest.fixture
 def con(tmp_path, monkeypatch):
-    """A fresh engine home (database, data/, inbox/) with both students seeded."""
+    """A fresh portal home (database, files/) with a master key."""
     monkeypatch.setenv("HS_HOME", str(tmp_path))
     monkeypatch.setenv(vault.ENV, vault.keygen())
     c = db.connect()
-    for s in config.students().values():
-        levels.seed(c, s)
-    return c
+    yield c
+    c.close()
+
+
+@pytest.fixture
+def family(con):
+    """One family with two children, like the original brief."""
+    fid = accounts.create_family(con, "Test family")
+    kids = {"timothy": accounts.add_student(con, fid, "Timothy", 4, 5),
+            "hannah": accounts.add_student(con, fid, "Hannah", 7, 7)}
+    return fid, kids

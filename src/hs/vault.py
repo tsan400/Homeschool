@@ -1,9 +1,11 @@
-"""Encryption for scan images. Scans and crops only ever reach disk through here.
+"""Encrypted file storage. Every file the portal keeps (scans, crops, packets) goes through here.
 
-AES-256-GCM with a key from the HS_SCAN_KEY environment variable (create one with
-`hs keygen`). Each file is MAGIC + 12-byte nonce + ciphertext. The file's label (e.g.
-"2026-10-05-timothy-math/crop/07") is bound in as associated data, so an encrypted
-crop can't be swapped for another without detection.
+Envelope encryption with AES-256-GCM:
+- HS_MASTER_KEY (from `hs keygen`, kept in the host's secret store) only wraps family keys.
+- Each family has its own random key, stored wrapped in the database.
+- Each file is MAGIC + 12-byte nonce + ciphertext, with its storage name bound in as associated
+  data, so a file can't be swapped for another (or another family's) without detection.
+A copy of the files directory or the database alone reveals nothing.
 """
 
 import base64
@@ -14,8 +16,10 @@ from pathlib import Path
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from hs import config
+
 MAGIC = b"HSE1"
-ENV = "HS_SCAN_KEY"
+ENV = "HS_MASTER_KEY"
 
 
 class VaultError(Exception):
@@ -26,11 +30,11 @@ def keygen() -> str:
     return base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
 
 
-def key() -> bytes:
+def master_key() -> bytes:
     raw = os.environ.get(ENV)
     if not raw:
-        raise VaultError(f"{ENV} is not set. Run `hs keygen` once and keep the key somewhere safe "
-                         "(password manager); without it, saved scans can't be opened.")
+        raise VaultError(f"{ENV} is not set. Run `hs keygen` once and store the key as a secret on the host "
+                         "(and in a password manager): without it, no saved file can be opened.")
     try:
         k = base64.urlsafe_b64decode(raw)
     except ValueError:
@@ -40,37 +44,53 @@ def key() -> bytes:
     return k
 
 
-def encrypt(data: bytes, label: str) -> bytes:
+def encrypt(data: bytes, label: str, key: bytes) -> bytes:
     nonce = secrets.token_bytes(12)
-    return MAGIC + nonce + AESGCM(key()).encrypt(nonce, data, label.encode())
+    return MAGIC + nonce + AESGCM(key).encrypt(nonce, data, label.encode())
 
 
-def decrypt(blob: bytes, label: str) -> bytes:
+def decrypt(blob: bytes, label: str, key: bytes) -> bytes:
     if not blob.startswith(MAGIC):
         raise VaultError("not an encrypted hs file")
     try:
-        return AESGCM(key()).decrypt(blob[4:16], blob[16:], label.encode())
+        return AESGCM(key).decrypt(blob[4:16], blob[16:], label.encode())
     except InvalidTag:
-        raise VaultError(f"can't decrypt {label}: wrong HS_SCAN_KEY, or the file was altered") from None
+        raise VaultError(f"can't decrypt {label}: wrong key, or the file was altered") from None
 
 
-def save(path: Path, data: bytes, label: str):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(encrypt(data, label))
+def new_family_key(family_id: int) -> bytes:
+    """A fresh family key, wrapped with the master key for storage in the family row."""
+    return encrypt(secrets.token_bytes(32), f"family/{family_id}", master_key())
 
 
-def load(path: Path, label: str) -> bytes:
-    return decrypt(Path(path).read_bytes(), label)
+def family_key(con, family_id: int) -> bytes:
+    row = con.execute("SELECT key_wrapped FROM family WHERE id=?", (family_id,)).fetchone()
+    if row is None:
+        raise VaultError(f"no family {family_id}")
+    return decrypt(row["key_wrapped"], f"family/{family_id}", master_key())
 
 
-def shred(path: Path):
-    """Overwrite then delete a plaintext file. Best effort: SSDs and copy-on-write
-    filesystems may keep old blocks, so the real protection is never writing plaintext."""
-    path = Path(path)
-    try:
-        with open(path, "r+b") as f:
-            f.write(b"\0" * path.stat().st_size)
-            f.flush()
-            os.fsync(f.fileno())
-    finally:
-        path.unlink(missing_ok=True)
+def path(family_id: int, name: str) -> Path:
+    if ".." in name or name.startswith("/"):
+        raise VaultError(f"bad file name {name}")
+    return config.files_dir() / str(family_id) / name
+
+
+def put(con, family_id: int, name: str, data: bytes):
+    p = path(family_id, name)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_bytes(encrypt(data, f"{family_id}/{name}", family_key(con, family_id)))
+    tmp.replace(p)  # atomic: a crash never leaves half a file
+
+
+def get(con, family_id: int, name: str) -> bytes:
+    return decrypt(path(family_id, name).read_bytes(), f"{family_id}/{name}", family_key(con, family_id))
+
+
+def exists(family_id: int, name: str) -> bool:
+    return path(family_id, name).exists()
+
+
+def delete(family_id: int, name: str):
+    path(family_id, name).unlink(missing_ok=True)

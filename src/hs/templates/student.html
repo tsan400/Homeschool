@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ s.name }} · Homeschool{% endblock %}
+{% block body %}
+<h1>{{ s.name }}</h1>
+<p class="muted">Grade {{ s.grade }} · math {{ n_mastered }}/{{ n_skills }} skills mastered</p>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between">
+    <a class="btn ghost" href="?month={{ cal.prev }}">‹</a>
+    <strong>{{ cal.title }}</strong>
+    <a class="btn ghost" href="?month={{ cal.next }}">›</a>
+  </div>
+  <div class="legend">
+    <span class="pill done">✓ done (score)</span><span class="pill review">to check</span>
+    <span class="pill partial">pages missing</span><span class="pill missing">not turned in</span><span class="pill assigned">assigned</span>
+  </div>
+  <div class="scroll">{% with mini=false %}{% include "_calendar.html" %}{% endwith %}</div>
+  <p class="muted">Click any day to see the packet, the scanned pages and the grades.</p>
+</div>
+
+<div class="card row">
+  <form method="post" action="/students/{{ s.id }}/{{ today.isoformat() }}/packet"><button>Today's packet</button></form>
+  <form method="post" action="/students/{{ s.id }}/{{ today.isoformat() }}/packet"><input type="hidden" name="kind" value="placement"><button class="ghost">Placement packet</button></form>
+  <form method="post" action="/students/{{ s.id }}/{{ today.isoformat() }}/packet"><input type="hidden" name="kind" value="test"><button class="ghost">Practice page (doesn't count)</button></form>
+</div>
+
+<h2>Working on now</h2>
+<div class="card scroll">
+  <table>
+    <tr><th>Skill</th><th>Level</th><th>At this level</th><th>Good sessions in a row</th></tr>
+    {% for sk, r in active %}
+      <tr><td>{{ sk.name }}</td><td>{{ r.level }} / {{ sk.levels|length }}</td><td>{{ sk.levels[r.level - 1] }}</td><td>{{ r.up_streak }}</td></tr>
+    {% else %}
+      <tr><td colspan="4" class="muted">Everything is mastered. Time for new skills.</td></tr>
+    {% endfor %}
+  </table>
+  {% if upcoming %}<p class="muted">Next up: {{ upcoming|map(attribute=0)|map(attribute='name')|join(', ') }}</p>{% endif %}
+</div>
+{% endblock %}

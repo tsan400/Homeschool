@@ -39,12 +39,14 @@ def marker_corners(marker_id: int) -> list[tuple[float, float]]:
     return [(x, y), (x + MARKER, y), (x + MARKER, y + MARKER), (x, y + MARKER)]
 
 
-def qr_payload(student: str, date: str, ws_id: str, page: int) -> str:
-    return f"HS1|{student}|{date}|{ws_id}|{page}"
+def qr_payload(ws_id: str, page: int) -> str:
+    """Short on purpose: fewer characters means bigger QR modules, which read better from phone photos.
+    Student and date come from the worksheet row."""
+    return f"HS2|{ws_id}|{page}"
 
 
 def parse_qr(text: str) -> dict | None:
     parts = (text or "").split("|")
-    if len(parts) != 5 or parts[0] != "HS1":
+    if len(parts) != 3 or parts[0] != "HS2" or not parts[2].isdigit():
         return None
-    return {"student": parts[1], "date": parts[2], "worksheet": parts[3], "page": int(parts[4])}
+    return {"worksheet": parts[1], "page": int(parts[2])}

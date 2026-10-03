@@ -1,8 +1,8 @@
-"""End to end: print a real packet, fill it in, 'phone scan' it, grade, approve, plan the next day.
+"""End to end: make a real packet, fill it in, 'phone scan' it, upload, grade, approve, plan the next day.
 
-The offline test swaps the Claude reader for a stub that returns what we wrote, so it checks
+The offline tests swap the Claude reader for a stub that returns what we wrote, so they check
 everything except handwriting recognition: markers, QR, alignment, crops, blank detection,
-bubbles, grading, review flags, levels, and stuck-problem scaffolding.
+bubbles, grading, review flags, levels, stuck-problem scaffolding, and per-family storage.
 Set ANTHROPIC_API_KEY to also run test_live_transcription against the real API.
 """
 
@@ -12,7 +12,7 @@ import os
 import pytest
 from PIL import Image
 
-from hs import config, db, grade, levels, planner, read, render, vault
+from hs import accounts, config, db, grade, jobs, levels, packets, planner, read, vault
 from synthetic import fill_in, phone_scan, to_pdf
 
 DATE, NEXT = "2026-10-05", "2026-10-06"
@@ -23,37 +23,43 @@ def wrong(answer):
 
 
 @pytest.fixture
-def scanned(con, tmp_path):
-    ws_id = planner.create(con, "timothy", DATE)
-    render.render(con, ws_id, config.day_dir(DATE, "timothy"))
+def scanned(con, family):
+    fid, kids = family
+    sid = kids["timothy"]
+    ws_id = packets.make(con, sid, DATE)
     probs = {p["number"]: p for p in db.problems(con, ws_id)}
     written = {n: (wrong(p["answer"]) if n == 2 else p["answer"]) for n, p in probs.items() if n != 3}  # 3 left blank
     answers = {(probs[n]["page"], probs[n]["slot"]): t for n, t in written.items()}
     marks = {(probs[1]["page"], probs[1]["slot"], "stuck"): 1,
              (probs[4]["page"], probs[4]["slot"], "easy"): 1,
              (probs[6]["page"], probs[6]["slot"], "stuck"): 0.5}  # a tick, not a fill
-    pages = [phone_scan(img, seed) for seed, img in enumerate(fill_in(config.day_dir(DATE, "timothy") / "packet.pdf", answers, marks))]
+    packet = vault.get(con, fid, packets.packet_name(ws_id))
+    pages = [phone_scan(img, seed) for seed, img in enumerate(fill_in(packet, answers, marks))]
     pages = pages[::-1]                               # scanned in the wrong order
     pages[0] = pages[0].transpose(Image.ROTATE_180)   # and one page upside down
-    scan = config.inbox_dir() / "timothy.pdf"
-    scan.parent.mkdir(parents=True, exist_ok=True)
-    to_pdf(pages, scan)
-    return ws_id, probs, written, scan
+    return fid, ws_id, probs, written, to_pdf(pages)
 
 
-def test_scan_grade_approve_and_scaffold(con, scanned):
-    ws_id, probs, written, scan = scanned
+def reader_for(probs, written, asked=None, low=()):
     by_id = {str(p["id"]): n for n, p in probs.items()}
+
+    def fake(items):
+        if asked is not None:
+            asked.extend(by_id[i["id"]] for i in items)
+        return {i["id"]: {"text": written[by_id[i["id"]]], "confidence": 0.5 if by_id[i["id"]] in low else 0.97,
+                          "note": ""} for i in items}
+    return fake
+
+
+def test_upload_grade_approve_and_scaffold(con, scanned):
+    fid, ws_id, probs, written, scan_pdf = scanned
     asked = []
-
-    def fake_reader(items):
-        asked.extend(by_id[i["id"]] for i in items)
-        return {i["id"]: {"text": written[by_id[i["id"]]], "confidence": 0.5 if by_id[i["id"]] == 5 else 0.97, "note": ""}
-                for i in items}
-
-    report = grade.ingest(scan, transcribe=fake_reader)
-    assert not any("!" in line for line in report), report
-    assert_no_plaintext_images()
+    uid = jobs.submit(con, fid, "timothy.pdf", scan_pdf)
+    jobs.process(con, uid, reader_for(probs, written, asked, low=(5,)))
+    up = con.execute("SELECT * FROM upload WHERE id=?", (uid,)).fetchone()
+    assert up["status"] == "done" and "!" not in up["report"], up["report"]
+    assert not vault.exists(fid, jobs.upload_name(uid))   # raw upload dropped once fully used
+    assert_only_encrypted_files()
 
     # Blank detection and crop alignment: exactly the boxes we wrote in were sent to the reader.
     assert sorted(asked) == sorted(written)
@@ -72,10 +78,10 @@ def test_scan_grade_approve_and_scaffold(con, scanned):
 
     ws = db.worksheet(con, ws_id)
     assert ws["status"] == "graded"
-    folder = config.day_dir(DATE, "timothy")
-    assert vault.load(folder / "scan.enc", f"{ws_id}/scan/scan.enc").startswith(b"%PDF")
-    assert vault.load(r[1]["crop"], grade.crop_label(ws_id, 1)).startswith(b"\x89PNG")
-    assert len(json.loads((folder / "grades.json").read_text())["problems"]) == len(probs)
+    pages = json.loads(ws["scanned_pages"])
+    assert pages == sorted({p["page"] for p in probs.values()})
+    assert vault.get(con, fid, grade.page_name(ws_id, pages[0])).startswith(b"\xff\xd8")   # page image for the calendar
+    assert vault.get(con, fid, r[1]["crop"]).startswith(b"\x89PNG")
 
     # Approve: sessions are recorded per skill for new problems.
     levels.approve(con, ws_id)
@@ -85,61 +91,60 @@ def test_scan_grade_approve_and_scaffold(con, scanned):
     assert db.worksheet(con, ws_id)["status"] == "approved"
 
     # Next day: problem 1 was marked stuck -> worked example page + two scaffolded variants.
-    next_id = planner.create(con, "timothy", NEXT)
+    next_id = packets.make(con, ws["student"], NEXT)
     pages = json.loads(db.worksheet(con, next_id)["pages"])
     assert pages[0] == {"page": 1, "kind": "examples", "sources": [probs[1]["id"]]}
     scaffolds = [p for p in db.problems(con, next_id) if p["kind"] == "scaffold"]
     assert len(scaffolds) == 2 and all(p["source_problem_id"] == probs[1]["id"] for p in scaffolds)
-    render.render(con, next_id, config.day_dir(NEXT, "timothy"))
+
+
+def test_another_familys_upload_is_refused(con, scanned):
+    fid, ws_id, probs, written, scan_pdf = scanned
+    other = accounts.create_family(con, "Other")
+    uid = jobs.submit(con, other, "stolen.pdf", scan_pdf)
+    jobs.process(con, uid, reader_for(probs, written))
+    up = con.execute("SELECT * FROM upload WHERE id=?", (uid,)).fetchone()
+    assert up["status"] == "incomplete" and "didn't print" in up["report"]
+    assert db.worksheet(con, ws_id)["status"] == "printed"
+    assert not any(r["scanned"] for r in db.results(con, ws_id))
+
+
+def test_failed_grading_keeps_the_upload_for_retry(con, scanned):
+    fid, ws_id, probs, written, scan_pdf = scanned
+
+    def broken_reader(items):
+        raise ConnectionError("API unavailable")
+
+    uid = jobs.submit(con, fid, "timothy.pdf", scan_pdf)
+    jobs.process(con, uid, broken_reader)
+    up = con.execute("SELECT * FROM upload WHERE id=?", (uid,)).fetchone()
+    assert up["status"] == "error" and "API unavailable" in up["report"]
+    assert vault.exists(fid, jobs.upload_name(uid))
+    assert_only_encrypted_files()
+
+    jobs.retry(con, uid)
+    assert jobs.run_queued(reader_for(probs, written)) == 1
+    assert con.execute("SELECT status FROM upload WHERE id=?", (uid,)).fetchone()["status"] == "done"
+    assert db.worksheet(con, ws_id)["status"] == "graded"
 
 
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="needs ANTHROPIC_API_KEY")
 def test_live_transcription(con, scanned):
     """Real Claude read of the synthetic page (printed 'handwriting', so it should be near perfect)."""
-    ws_id, probs, written, scan = scanned
-    grade.ingest(scan, transcribe=read.transcribe)
+    fid, ws_id, probs, written, scan_pdf = scanned
+    grade.grade_scan(con, fid, scan_pdf, read.transcribe)
     rows = {r["number"]: r for r in db.results(con, ws_id)}
     matches = sum(grade.check(rows[n]["transcription"], text, "value" if "R" not in text else "remainder") is True
                   for n, text in written.items())
     assert matches >= 0.9 * len(written), {n: (rows[n]["transcription"], t) for n, t in written.items()}
 
 
-def assert_no_plaintext_images():
-    """After grading, the only image data left anywhere in the engine's home is encrypted."""
-    home = config.home()
-    allowed = {"hs.db", "packet.pdf", "key.pdf", "grades.json"}  # packets are blank worksheets, not scans
-    for f in home.rglob("*"):
+def assert_only_encrypted_files():
+    """Everything the portal keeps on disk, apart from the database, is encrypted."""
+    for f in config.files_dir().rglob("*"):
         if f.is_file():
-            assert f.suffix == ".enc" or f.name in allowed, f"unexpected file at rest: {f}"
-            if f.suffix == ".enc":
-                head = f.read_bytes()[:64]
-                assert head.startswith(vault.MAGIC) and b"PNG" not in head and b"%PDF" not in head
-    assert not list(config.inbox_dir().iterdir()), "inbox should be empty after a complete grade"
-
-
-def test_crash_mid_grade_leaves_only_encrypted_copy(con, scanned):
-    ws_id, probs, written, scan = scanned
-
-    def broken_reader(items):
-        raise ConnectionError("API unavailable")
-
-    with pytest.raises(ConnectionError):
-        grade.ingest(scan, transcribe=broken_reader)
-    assert not scan.exists()                    # plaintext shredded before grading started
-    held = config.inbox_dir() / (scan.name + ".enc")
-    assert held.exists() and held.read_bytes().startswith(vault.MAGIC)
-
-    by_id = {str(p["id"]): n for n, p in probs.items()}
-    report = grade.ingest(held, transcribe=lambda items: {
-        i["id"]: {"text": written[by_id[i["id"]]], "confidence": 0.97, "note": ""} for i in items})
-    assert not any("!" in line for line in report), report
-    assert not held.exists()                    # retried from the encrypted copy, then removed
-    assert_no_plaintext_images()
-
-
-def test_grading_refuses_without_key(con, scanned, monkeypatch):
-    *_, scan = scanned
-    monkeypatch.delenv(vault.ENV)
-    with pytest.raises(vault.VaultError):
-        grade.ingest(scan, transcribe=lambda items: {})
-    assert scan.exists()  # nothing was touched
+            head = f.read_bytes()[:64]
+            assert head.startswith(vault.MAGIC), f"unencrypted file at rest: {f}"
+            assert b"PNG" not in head and b"%PDF" not in head and b"JFIF" not in head
+    stray = [f for f in config.home().iterdir() if f.is_file() and not f.name.startswith("hs.db")]
+    assert not stray, stray

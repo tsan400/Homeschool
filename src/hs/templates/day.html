@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ s.name }}, {{ day }} · Homeschool{% endblock %}
+{% block body %}
+<p><a href="/students/{{ s.id }}?month={{ day[:7] }}">‹ {{ s.name }}'s calendar</a></p>
+<h1>{{ s.name }} · {{ d.strftime("%A, %B ") ~ d.day ~ d.strftime(", %Y") }}</h1>
+
+{% if request.query_params.get('msg') == 'missing' %}
+  <div class="warn">Some problems haven't been scanned. Upload those pages, or tick "skip" on them, before approving.</div>
+{% endif %}
+
+{% if not sheets %}
+  <div class="card">
+    <p style="margin-top:0">No packet for this day.</p>
+    {% if pending %}<div class="warn">{{ pending }} earlier packet(s) haven't been approved yet, so this one will use the levels from the last approval.</div>{% endif %}
+    <form method="post" action="/students/{{ s.id }}/{{ day }}/packet"><button>Make the packet for this day</button></form>
+  </div>
+{% endif %}
+
+{% for sh in sheets %}{% set ws = sh.ws %}
+<section class="card" id="{{ ws.id }}">
+  <div class="row" style="justify-content:space-between">
+    <h2 style="margin:0">{{ sh.kind }}</h2>
+    {% set st = {'printed':('assigned' if day >= today.isoformat() else 'missing','Not turned in yet'),'partial':('partial','Pages missing'),'graded':('review','Ready to check'),'approved':('done','Approved')}[ws.status] %}
+    <span class="pill {{ st[0] }}">{{ st[1] }}{% if ws.status != 'printed' %} · {{ sh.score[0] }}/{{ sh.score[1] }}{% endif %}</span>
+  </div>
+  <div class="row" style="margin:12px 0">
+    <a class="btn ghost" href="/ws/{{ ws.id }}/packet.pdf" target="_blank">Packet PDF</a>
+    <a class="btn ghost" href="/ws/{{ ws.id }}/key.pdf" target="_blank">Answer key</a>
+    {% if ws.status != 'approved' %}<a class="btn ghost" href="/uploads">Upload scan</a>{% endif %}
+    {% if ws.status == 'printed' %}
+      <form method="post" action="/students/{{ s.id }}/{{ day }}/packet"><input type="hidden" name="kind" value="{{ ws.kind }}"><input type="hidden" name="fresh" value="true"><button class="ghost" title="Throw away this unscanned packet and make a new one">New problems</button></form>
+    {% endif %}
+  </div>
+
+  {% if sh.pages %}
+    <h3>Scanned pages</h3>
+    <div class="pages">
+      {% for n in sh.pages %}<a href="/ws/{{ ws.id }}/page-{{ n }}.jpg" target="_blank"><img src="/ws/{{ ws.id }}/page-{{ n }}.jpg" alt="Page {{ n }}" loading="lazy"></a>{% endfor %}
+    </div>
+  {% elif ws.status == 'printed' %}
+    <p class="muted">No pages scanned yet.</p>
+  {% endif %}
+
+  {% if ws.status != 'printed' %}
+  <h3>Answers</h3>
+  <form method="post" action="/ws/{{ ws.id }}/review">
+  <div class="scroll">
+  <table>
+    <tr><th>#</th><th>Problem</th><th>Key</th><th>Written</th><th>Read as</th><th>Result</th><th>Stuck</th><th>Too easy</th><th>Skip</th></tr>
+    {% for r in sh.rows %}
+    <tr class="{{ 'flag' if r.reason and not r.reviewed }}">
+      <td>{{ r.number }}</td>
+      <td class="prompt">{{ plain(r.prompt) }}<div class="muted" style="font-size:.8rem">{{ sh.skill[r.skill] }} · L{{ r.level }} · {{ r.kind }}</div>
+        {% if r.reason and not r.reviewed %}<div class="pill partial">{{ r.reason }}</div>{% endif %}</td>
+      <td><strong>{{ r.answer }}</strong></td>
+      {% if r.scanned and not (r.excluded and not r.crop) %}
+        <td>{% if r.crop %}<img class="crop" src="/ws/{{ ws.id }}/crop-{{ r.number }}.png" alt="answer {{ r.number }}" loading="lazy">{% endif %}</td>
+        {% if ws.status == 'approved' %}
+          <td>{{ r.transcription or '(blank)' }}</td><td>{{ '✓' if r.correct else '✗' }}</td>
+          <td>{{ '●' if r.stuck }}</td><td>{{ '●' if r.too_easy }}</td><td>{{ 'skipped' if r.excluded }}</td>
+        {% else %}
+          <td><input name="t{{ r.id }}" value="{{ r.transcription or '' }}" size="7" aria-label="read as"></td>
+          <td><select name="c{{ r.id }}"><option value="1" {{ 'selected' if r.correct }}>✓ right</option><option value="0" {{ 'selected' if not r.correct }}>✗ wrong</option></select></td>
+          <td><input type="checkbox" name="s{{ r.id }}" {{ 'checked' if r.stuck }} aria-label="stuck"></td>
+          <td><input type="checkbox" name="e{{ r.id }}" {{ 'checked' if r.too_easy }} aria-label="too easy"></td>
+          <td><input type="checkbox" name="x{{ r.id }}" {{ 'checked' if r.excluded }} aria-label="skip"></td>
+        {% endif %}
+      {% else %}
+        <td colspan="5" class="muted">{{ 'skipped' if r.excluded else 'not scanned' }}</td>
+        <td>{% if ws.status != 'approved' and not r.excluded %}<input type="checkbox" name="x{{ r.id }}" aria-label="skip">{% endif %}</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% if ws.status != 'approved' %}
+    <p class="muted">Fix anything misread. Changing "Read as" re-grades the answer. "Skip" leaves a problem out of the score.
+      Levels change only when you approve.</p>
+    <div class="row">
+      <button name="action" value="save" class="ghost">Save</button>
+      <button name="action" value="approve">Save and approve</button>
+    </div>
+  {% endif %}
+  </form>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

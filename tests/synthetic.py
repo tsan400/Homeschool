@@ -21,11 +21,11 @@ def font(size):
     return ImageFont.load_default(size)
 
 
-def fill_in(packet: Path, answers: dict, marks: dict, dpi=150) -> list[Image.Image]:
-    """answers: {(page, slot): text}; marks: {(page, slot, 'stuck'|'easy'): fill 0..1}."""
+def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150) -> list[Image.Image]:
+    """packet: PDF bytes. answers: {(page, slot): text}; marks: {(page, slot, 'stuck'|'easy'): fill 0..1}."""
     s = dpi / 72
     pages = []
-    for n, page in enumerate(pdfium.PdfDocument(str(packet)), 1):
+    for n, page in enumerate(pdfium.PdfDocument(packet), 1):
         img = page.render(scale=s).to_pil().convert("L")
         d = ImageDraw.Draw(img)
         for (pg, slot), text in answers.items():
@@ -67,5 +67,7 @@ def phone_scan(img: Image.Image, seed: int) -> Image.Image:
     return Image.open(io.BytesIO(buf.getvalue()))
 
 
-def to_pdf(images: list[Image.Image], path: Path):
-    images[0].convert("RGB").save(path, save_all=True, append_images=[i.convert("RGB") for i in images[1:]])
+def to_pdf(images: list[Image.Image]) -> bytes:
+    buf = io.BytesIO()
+    images[0].convert("RGB").save(buf, "PDF", save_all=True, append_images=[i.convert("RGB") for i in images[1:]])
+    return buf.getvalue()

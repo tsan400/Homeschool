@@ -49,7 +49,7 @@ def pretty_date(iso: str) -> str:
 def page_frame(build: Path, ws, page: int, total: int, student_name: str) -> str:
     """Markers, QR code, and header shared by every page."""
     qr = build / f"qr{page}.svg"
-    segno.make(L.qr_payload(ws["student"], ws["date"], ws["id"], page), error="m").save(qr, kind="svg", border=2)
+    segno.make(L.qr_payload(ws["id"], page), error="m").save(qr, kind="svg", border=2)
     out = "".join(at(x, y, f'#image("m{i}.svg", width: {L.MARKER}pt)') for i, (x, y) in L.MARKERS.items())
     out += at(L.QR[0], L.QR[1], f'#image("{qr.name}", width: {L.QR[2]}pt)')
     title = f"{esc(student_name)} · {esc(ws['subject'].title())}" + (" · Placement" if ws["kind"] == "placement" else "")
@@ -96,9 +96,10 @@ def compile_typ(source: str, build: Path, out: Path):
     typst.compile(str(build / "main.typ"), output=str(out), root=str(build))
 
 
-def render(con, ws_id: str, out_dir: Path) -> tuple[Path, Path]:
+def render(con, ws_id: str) -> tuple[bytes, bytes]:
+    """-> (packet PDF, answer key PDF), built in a temporary folder and returned as bytes."""
     ws = db.worksheet(con, ws_id)
-    name = config.students().get(ws["student"], {}).get("name", ws["student"].title())
+    name = db.student(con, ws["student"])["name"]
     pages = json.loads(ws["pages"])
     probs = db.problems(con, ws_id)
     with tempfile.TemporaryDirectory() as tmp:
@@ -115,8 +116,7 @@ def render(con, ws_id: str, out_dir: Path) -> tuple[Path, Path]:
                     src += instructions()
                 src += "".join(problem_slot(p) for p in probs if p["page"] == pg["page"])
             parts.append(src)
-        packet = out_dir / "packet.pdf"
-        compile_typ(HEADER + "#pagebreak()\n".join(parts), build, packet)
+        compile_typ(HEADER + "#pagebreak()\n".join(parts), build, build / "packet.pdf")
 
         rows = "".join(f"[{p['number']}], [{p['prompt']}], [*{esc(p['answer'])}*], "
                        f"[#text(size: 9pt)[{esc(config.skill(p['skill'])['name'])} L{p['level']} {p['kind']}]],\n" for p in probs)
@@ -129,6 +129,5 @@ def render(con, ws_id: str, out_dir: Path) -> tuple[Path, Path]:
   [*\\#*], [*Problem*], [*Answer*], [*Skill*],
 {rows})
 """
-        key = out_dir / "key.pdf"
-        compile_typ(key_src, build, key)
-    return packet, key
+        compile_typ(key_src, build, build / "key.pdf")
+        return (build / "packet.pdf").read_bytes(), (build / "key.pdf").read_bytes()

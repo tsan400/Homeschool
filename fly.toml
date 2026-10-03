@@ -1,0 +1,29 @@
+# Fly.io deployment. One machine with a volume: SQLite and the encrypted files live on it.
+# First time:  fly launch --no-deploy --copy-config   then see README "Hosting".
+app = "homeschool-portal"          # change to your own app name
+primary_region = "iad"
+
+[build]
+
+[env]
+  HS_HOME = "/data"
+  HS_BASE_URL = "https://homeschool-portal.fly.dev"   # your public address; used in sign-in emails
+
+[mounts]
+  source = "hs_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "off"       # the grading worker runs in the background
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "2gb"                   # OpenCV + PDF rendering of phone scans

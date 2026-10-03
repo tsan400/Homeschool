@@ -54,6 +54,12 @@ class Page:
         return buf.tobytes()
 
 
+    def jpeg(self, quality=80) -> bytes:
+        """The whole straightened page, for viewing in the portal."""
+        ok, buf = cv2.imencode(".jpg", self.image, [cv2.IMWRITE_JPEG_QUALITY, quality])
+        return buf.tobytes()
+
+
 def load_images(data: bytes, dpi: int) -> list[np.ndarray]:
     """Decode a PDF or image held in memory. Nothing is written to disk."""
     if data.startswith(b"%PDF"):
@@ -84,11 +90,15 @@ def straighten(img: np.ndarray, scale: float) -> np.ndarray:
 
 
 def read_qr(page: np.ndarray, scale: float) -> dict | None:
+    """Decode the page's QR code. Phone photos can be soft or noisy, so try progressively
+    cleaned-up versions of the QR corner before falling back to the whole page."""
     x, y, s = L.QR
     m = 20
     region = page[int((y - m) * scale):int((y + s + m) * scale), int((x - m) * scale):int((x + s + m) * scale)]
+    big = cv2.resize(region, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+    otsu = cv2.threshold(cv2.GaussianBlur(big, (5, 5), 0), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     det = cv2.QRCodeDetector()
-    for candidate in (region, page):
+    for candidate in (region, big, otsu, page):
         text, *_ = det.detectAndDecode(candidate)
         if text and (payload := L.parse_qr(text)):
             return payload
