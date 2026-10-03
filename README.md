@@ -36,6 +36,30 @@ Other options:
 - `hs print --test` prints a 10-problem calibration packet that never changes levels. Use it
   to check your printer and phone scanner before the kids start.
 - `hs print --fresh` throws away today's unscanned packet and makes a new one.
+- `hs curriculum [--grade 7]` lists the K-12 sequence. A `*` marks topics the engine
+  already generates and grades.
+
+## Curriculum
+
+`content/math/curriculum.yaml` is the K-12 math sequence that the skills tree is built from.
+AmblesideOnline doesn't set a math sequence. It lists programs to choose from, so this file
+follows the order of the ones it names that suit a Charlotte Mason, paper-and-pencil approach:
+
+- Grades K-5: Charlotte Mason Elementary Arithmetic, Books 1-5.
+- Grades 3-8: Strayer-Upton Practical Arithmetics.
+- Grade 9: Jacobs' *Elementary Algebra*.
+- Grade 10: Jacobs' *Geometry*, with Euclid Book I.
+- Grades 11-12: Algebra 2 and precalculus in the usual order.
+
+Each topic has a `mode`:
+
+- `paper`: short answers the engine can grade.
+- `written`: proofs or drawings the parent checks.
+- `oral`: mental arithmetic and narration.
+- `hands-on`: objects, measuring, ruler and compass.
+
+`skills.yaml` holds the topics the engine currently generates. A test keeps it in the same
+grade and order as the curriculum.
 
 ## Scan privacy
 
@@ -90,7 +114,7 @@ What this doesn't cover:
 
 ```
 config/            students and settings (edit these)
-content/math/      skills tree, in teaching order
+content/math/      curriculum.yaml (K-12 map) and skills.yaml (the generated part)
 src/hs/            cli, planner, generators, render (Typst), scan, read (Claude), grade, review, levels, vault, viewer
 data/YYYY-MM-DD/<child>/   packet.pdf, key.pdf, grades.json, scan.enc, crops/NN.enc   (gitignored)
 inbox/             drop scans here; they are encrypted then shredded on `hs grade`   (gitignored)

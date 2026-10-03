@@ -103,3 +103,15 @@ def status(student: str = typer.Option(None)):
         waiting = con.execute("SELECT id, status FROM worksheet WHERE student=? AND status IN ('printed','graded','partial') ORDER BY date", (sid,)).fetchall()
         for w in waiting:
             typer.echo(f"   {w['id']}: {w['status']}")
+
+
+@app.command()
+def curriculum(grade: list[int] = typer.Option(None, help="Only these grades (0 = K). Repeatable.")):
+    """The K-12 math sequence. * = generated and graded by the engine; the rest are not yet."""
+    auto = {sk["id"] for sk in config.skills()}
+    for g in config.curriculum():
+        if grade and g["grade"] not in grade:
+            continue
+        typer.secho(f"\n{g['label']}  ({'; '.join(g['sources'])})", bold=True)
+        for t in g["topics"]:
+            typer.echo(f"  {'*' if t['id'] in auto else ' '} {t['name']}  [{t['mode']}]")

@@ -1,0 +1,252 @@
+# K-12 math scope and sequence: the map the engine's skills tree is built from.
+#
+# AmblesideOnline doesn't prescribe a math sequence; its Math page lists programs to choose
+# from (amblesideonline.org/math). This list follows the sequence of the ones it names that
+# fit a Charlotte Mason, paper-and-pencil approach:
+#   K-5   Charlotte Mason Elementary Arithmetic (Baburina, Simply Charlotte Mason), Books 1-5,
+#         which reconstructs what Mason's PNEU schools taught and when; Ray's Arithmetic
+#   3-8   Strayer-Upton Practical Arithmetics, Books 1-3 (Book 1 gr 3-4, 2 gr 5-6, 3 gr 7-8)
+#   8-9   Harold Jacobs, Elementary Algebra (chapter order)
+#   10    Harold Jacobs, Geometry: Seeing, Doing, Understanding; Euclid's Elements, Book I
+#   11-12 Algebra 2 and precalculus in conventional order; Jacobs, Mathematics: A Human
+#         Endeavor, as an alternative survey course
+# Where those books disagree on timing, the standard US grade placement decides.
+#
+# Charlotte Mason's method, which shapes the `mode` of the early grades:
+#   - Formal arithmetic starts in Year 1 (about age 6). Year 0 (K) is play with real objects.
+#   - Short lessons (20 min, 30 by grade 4), concrete objects (beans, coins) before symbols,
+#     mental arithmetic every day, and accuracy before speed.
+#   - Geometry starts as "inventional geometry", drawing and constructing with ruler and
+#     compass in the middle years, before Euclid and proof.
+#
+# Fields:
+#   id      unique. When it matches an id in skills.yaml, the engine generates and grades it.
+#   strand  number, operations, fractions, decimals, ratio, expressions, equations,
+#           functions, geometry, measurement, data
+#   mode    paper     short-answer written work the engine can generate and grade
+#           written   on paper, but the answer is a proof, drawing or explanation the parent checks
+#           oral      mental arithmetic or narration, done aloud with the parent
+#           hands-on  objects, measuring, ruler and compass
+# Topics are listed in teaching order within each grade.
+
+grades:
+  - grade: 0
+    label: K (AO Year 0)
+    sources: [informal play with objects, before formal lessons]
+    topics:
+      - {id: count_20, strand: number, mode: hands-on, name: Count real objects to 20, one to one}
+      - {id: numerals_10, strand: number, mode: written, name: Read and write numerals 0-10}
+      - {id: compare_sets, strand: number, mode: hands-on, name: "More, fewer, the same"}
+      - {id: make_10, strand: operations, mode: hands-on, name: Ways to make each number to 10 with beans}
+      - {id: stories_10, strand: operations, mode: oral, name: Story sums and take-aways within 10}
+      - {id: shapes_flat, strand: geometry, mode: hands-on, name: "Circle, square, triangle, rectangle"}
+      - {id: patterns, strand: number, mode: hands-on, name: Copy and continue patterns}
+      - {id: compare_measures, strand: measurement, mode: hands-on, name: "Longer, heavier, holds more"}
+      - {id: days_week, strand: measurement, mode: oral, name: Days of the week; morning, afternoon, evening}
+
+  - grade: 1
+    label: Grade 1 (AO Year 1)
+    sources: [CM Elementary Arithmetic Book 1, Ray's Primary Arithmetic]
+    topics:
+      - {id: count_100, strand: number, mode: oral, name: "Count to 100; skip count by 2s, 5s and 10s"}
+      - {id: place_value_100, strand: number, mode: hands-on, name: Tens and ones with bundled sticks}
+      - {id: numerals_100, strand: number, mode: paper, name: Read and write numbers to 100}
+      - {id: add_facts_10, strand: operations, mode: paper, name: Addition facts to 10}
+      - {id: sub_facts_10, strand: operations, mode: paper, name: Subtraction facts within 10}
+      - {id: add_sub_20, strand: operations, mode: paper, name: Addition and subtraction within 20}
+      - {id: add_sub_2digit, strand: operations, mode: paper, name: 2-digit addition and subtraction without regrouping}
+      - {id: mental_1, strand: operations, mode: oral, name: Daily mental sums and story problems}
+      - {id: coins, strand: measurement, mode: hands-on, name: "Penny, nickel, dime, quarter; count coins to $1"}
+      - {id: time_half_hour, strand: measurement, mode: paper, name: Time to the hour and half hour}
+      - {id: measure_inches, strand: measurement, mode: hands-on, name: Measure length in inches}
+      - {id: halves_quarters, strand: fractions, mode: hands-on, name: Halves and quarters of shapes and sets}
+
+  - grade: 2
+    label: Grade 2 (AO Year 2)
+    sources: [CM Elementary Arithmetic Book 2, Ray's Primary Arithmetic]
+    topics:
+      - {id: add_facts_20, strand: operations, mode: paper, name: Addition table to 10 + 10}
+      - {id: even_odd, strand: number, mode: oral, name: Even and odd numbers}
+      - {id: place_value_1000, strand: number, mode: paper, name: "Hundreds, tens and ones; compare numbers to 1,000"}
+      - {id: add_sub_3digit, strand: operations, mode: paper, name: 3-digit addition and subtraction with carrying and borrowing}
+      - {id: mult_tables_6, strand: operations, mode: paper, name: Multiplication as repeated addition; tables to 6 x 10}
+      - {id: sharing, strand: operations, mode: hands-on, name: Division as equal sharing}
+      - {id: money_cents, strand: measurement, mode: paper, name: Dollars and cents; making change}
+      - {id: time_5min, strand: measurement, mode: paper, name: Time to 5 minutes; the calendar}
+      - {id: measure_us, strand: measurement, mode: hands-on, name: "Inches, feet, yards; cups, pints, quarts"}
+      - {id: unit_fractions, strand: fractions, mode: hands-on, name: "1/2, 1/3, 1/4 of shapes and sets"}
+      - {id: polygons, strand: geometry, mode: hands-on, name: Name polygons by sides and corners}
+      - {id: stories_2step, strand: operations, mode: oral, name: Two-step story problems}
+
+  - grade: 3
+    label: Grade 3 (AO Year 3)
+    sources: [CM Elementary Arithmetic Book 3, Strayer-Upton Book 1]
+    topics:
+      - {id: place_value_10000, strand: number, mode: paper, name: "Read, write and compare numbers to 10,000"}
+      - {id: add_sub, strand: operations, mode: paper, name: Multi-digit addition and subtraction}
+      - {id: mult_facts, strand: operations, mode: paper, name: Multiplication facts}
+      - {id: div_facts, strand: operations, mode: paper, name: Division facts}
+      - {id: rounding, strand: number, mode: paper, name: Round to 10 and 100; estimate sums}
+      - {id: mental_3, strand: operations, mode: oral, name: Mental arithmetic with tables and money}
+      - {id: fractions_intro, strand: fractions, mode: paper, name: Fractions of a set and on a number line; compare unit fractions}
+      - {id: money_add, strand: measurement, mode: paper, name: Add and subtract money}
+      - {id: elapsed_time, strand: measurement, mode: paper, name: Time to the minute; elapsed time}
+      - {id: weights_measures, strand: measurement, mode: hands-on, name: "Weight, volume, distance with real scales and jugs"}
+      - {id: area_squares, strand: geometry, mode: paper, name: Area by counting squares; perimeter}
+      - {id: bar_graphs, strand: data, mode: paper, name: Picture graphs and bar graphs}
+
+  - grade: 4
+    label: Grade 4 (AO Year 4)
+    sources: [CM Elementary Arithmetic Book 4, Strayer-Upton Book 1]
+    topics:
+      - {id: place_value_million, strand: number, mode: paper, name: "Read, write and round numbers to 1,000,000"}
+      - {id: mult_multi, strand: operations, mode: paper, name: Multi-digit multiplication}
+      - {id: long_div, strand: operations, mode: paper, name: Long division}
+      - {id: roman_numerals, strand: number, mode: paper, name: Roman numerals}
+      - {id: frac_equiv, strand: fractions, mode: paper, name: Equivalent fractions}
+      - {id: frac_simplify, strand: fractions, mode: paper, name: Simplifying fractions}
+      - {id: frac_compare, strand: fractions, mode: paper, name: Compare and order fractions}
+      - {id: frac_add_like, strand: fractions, mode: paper, name: Adding and subtracting like denominators}
+      - {id: dec_intro, strand: decimals, mode: paper, name: Tenths and hundredths as decimals}
+      - {id: averages, strand: data, mode: paper, name: Averages}
+      - {id: unit_convert, strand: measurement, mode: paper, name: Convert US and metric units}
+      - {id: area_perimeter, strand: geometry, mode: paper, name: Area and perimeter of rectangles}
+      - {id: angles_lines, strand: geometry, mode: hands-on, name: "Right, acute and obtuse angles; parallel and perpendicular lines"}
+      - {id: scale_plans, strand: geometry, mode: hands-on, name: Draw plans to scale}
+      - {id: word_problems_4, strand: operations, mode: paper, name: Multi-step word problems}
+
+  - grade: 5
+    label: Grade 5 (AO Year 5)
+    sources: [CM Elementary Arithmetic Book 5, Strayer-Upton Book 2]
+    topics:
+      - {id: divisibility_primes, strand: number, mode: paper, name: "Divisibility by 2-12, primes, prime factors"}
+      - {id: gcf_lcm, strand: number, mode: paper, name: Greatest common factor and least common multiple}
+      - {id: frac_add_unlike, strand: fractions, mode: paper, name: Adding and subtracting unlike denominators}
+      - {id: frac_mult, strand: fractions, mode: paper, name: Multiplying fractions}
+      - {id: frac_div, strand: fractions, mode: paper, name: Dividing fractions}
+      - {id: dec_compare, strand: decimals, mode: paper, name: Compare and round decimals}
+      - {id: dec_add_sub, strand: decimals, mode: paper, name: Adding and subtracting decimals}
+      - {id: dec_mult, strand: decimals, mode: paper, name: Multiplying decimals}
+      - {id: order_ops, strand: expressions, mode: paper, name: Order of operations}
+      - {id: volume_boxes, strand: geometry, mode: paper, name: Volume of rectangular boxes}
+      - {id: polygon_perimeter, strand: geometry, mode: paper, name: Perimeter of polygons}
+      - {id: inventional_geometry, strand: geometry, mode: hands-on, name: "Inventional geometry: ruler and compass constructions"}
+      - {id: coordinates_1, strand: functions, mode: paper, name: Plot points in the first quadrant}
+      - {id: line_graphs, strand: data, mode: paper, name: Line graphs}
+
+  - grade: 6
+    label: Grade 6 (AO Year 6)
+    sources: [Strayer-Upton Book 2]
+    topics:
+      - {id: dec_div, strand: decimals, mode: paper, name: Dividing decimals}
+      - {id: frac_dec_pct, strand: ratio, mode: paper, name: "Convert between fractions, decimals and percents"}
+      - {id: exponents, strand: expressions, mode: paper, name: Exponents}
+      - {id: ratio, strand: ratio, mode: paper, name: Ratios and proportions}
+      - {id: unit_rate, strand: ratio, mode: paper, name: Rates and unit prices}
+      - {id: percent, strand: ratio, mode: paper, name: Percents}
+      - {id: number_line_abs, strand: number, mode: paper, name: Negative numbers on the number line; absolute value}
+      - {id: int_add_sub, strand: number, mode: paper, name: Adding and subtracting integers}
+      - {id: evaluate_expr, strand: expressions, mode: paper, name: Evaluate expressions with variables}
+      - {id: one_step_eq, strand: equations, mode: paper, name: One-step equations}
+      - {id: area_polygons, strand: geometry, mode: paper, name: "Area of triangles, parallelograms and trapezoids"}
+      - {id: coordinates_4, strand: functions, mode: paper, name: The four-quadrant coordinate plane}
+      - {id: mean_median, strand: data, mode: paper, name: "Mean, median, mode and range"}
+
+  - grade: 7
+    label: Grade 7 (AO Year 7)
+    sources: [Strayer-Upton Book 3]
+    topics:
+      - {id: int_mult_div, strand: number, mode: paper, name: Multiplying and dividing integers}
+      - {id: rational_ops, strand: number, mode: paper, name: Operations with negative fractions and decimals}
+      - {id: like_terms, strand: expressions, mode: paper, name: Combine like terms; the distributive property}
+      - {id: two_step_eq, strand: equations, mode: paper, name: Two-step equations}
+      - {id: inequalities_1, strand: equations, mode: paper, name: One- and two-step inequalities}
+      - {id: proportions, strand: ratio, mode: paper, name: Solve proportions; scale drawings}
+      - {id: pct_change, strand: ratio, mode: paper, name: "Percent change, discount, tax and simple interest"}
+      - {id: square_roots, strand: number, mode: paper, name: Squares and square roots}
+      - {id: angle_relations, strand: geometry, mode: paper, name: Angle relationships; triangle angle sum}
+      - {id: circles, strand: geometry, mode: paper, name: Circumference and area of circles}
+      - {id: surface_volume, strand: geometry, mode: paper, name: Surface area and volume of prisms and cylinders}
+      - {id: probability, strand: data, mode: paper, name: Simple probability}
+
+  - grade: 8
+    label: Grade 8 (AO Year 8)
+    sources: [Strayer-Upton Book 3, Jacobs Elementary Algebra ch 1-6]
+    topics:
+      - {id: exp_rules, strand: expressions, mode: paper, name: Laws of exponents; zero and negative exponents}
+      - {id: sci_notation, strand: number, mode: paper, name: Scientific notation}
+      - {id: irrationals, strand: number, mode: paper, name: Rational and irrational numbers; estimate roots}
+      - {id: multi_step_eq, strand: equations, mode: paper, name: Variables on both sides}
+      - {id: pythagorean, strand: geometry, mode: paper, name: Pythagorean theorem}
+      - {id: functions_intro, strand: functions, mode: paper, name: "Functions as rules, tables and graphs"}
+      - {id: slope, strand: functions, mode: paper, name: Slope}
+      - {id: graph_lines, strand: functions, mode: paper, name: Graph y = mx + b}
+      - {id: transformations, strand: geometry, mode: hands-on, name: "Translations, reflections, rotations, dilations"}
+      - {id: volume_round, strand: geometry, mode: paper, name: "Volume of cones, cylinders and spheres"}
+      - {id: scatter_plots, strand: data, mode: paper, name: Scatter plots and lines of fit}
+      - {id: euclid_1, strand: geometry, mode: oral, name: "Euclid Book I: demonstrate propositions aloud"}
+
+  - grade: 9
+    label: Grade 9, Algebra 1 (AO Year 9)
+    sources: [Jacobs Elementary Algebra ch 5-17]
+    topics:
+      - {id: literal_eq, strand: equations, mode: paper, name: Solve formulas for a variable}
+      - {id: line_equations, strand: functions, mode: paper, name: "Equations of lines: slope-intercept and point-slope"}
+      - {id: systems, strand: equations, mode: paper, name: Systems of equations by substitution and elimination}
+      - {id: poly_ops, strand: expressions, mode: paper, name: "Add, subtract and multiply polynomials"}
+      - {id: factoring, strand: expressions, mode: paper, name: "Factor: common factors, trinomials, difference of squares"}
+      - {id: alg_fractions, strand: expressions, mode: paper, name: Simplify and combine algebraic fractions}
+      - {id: radicals, strand: expressions, mode: paper, name: Simplify square roots}
+      - {id: quadratic_eq, strand: equations, mode: paper, name: Quadratic equations by factoring and the quadratic formula}
+      - {id: fractional_eq, strand: equations, mode: paper, name: Equations with fractions}
+      - {id: inequalities_2, strand: equations, mode: paper, name: Compound and absolute value inequalities}
+      - {id: sequences, strand: functions, mode: paper, name: Arithmetic and geometric sequences}
+      - {id: alg_word_problems, strand: equations, mode: paper, name: Word problems written as equations}
+
+  - grade: 10
+    label: Grade 10, Geometry (AO Year 10)
+    sources: [Jacobs Geometry, "Euclid's Elements Book I"]
+    topics:
+      - {id: deductive_reasoning, strand: geometry, mode: written, name: Inductive and deductive reasoning; two-column proof}
+      - {id: lines_angles, strand: geometry, mode: paper, name: Lines and angles}
+      - {id: congruence, strand: geometry, mode: written, name: Congruent triangles}
+      - {id: parallel_lines, strand: geometry, mode: paper, name: Parallel lines and transversals}
+      - {id: quadrilaterals, strand: geometry, mode: paper, name: Properties of quadrilaterals}
+      - {id: constructions, strand: geometry, mode: hands-on, name: Compass and straightedge constructions}
+      - {id: area_geo, strand: geometry, mode: paper, name: Area of polygons}
+      - {id: similarity, strand: geometry, mode: paper, name: Similar triangles}
+      - {id: right_triangles, strand: geometry, mode: paper, name: Special right triangles; sine, cosine, tangent}
+      - {id: circle_geo, strand: geometry, mode: paper, name: "Arcs, chords and inscribed angles"}
+      - {id: concurrence, strand: geometry, mode: written, name: Concurrence theorems}
+      - {id: solids, strand: geometry, mode: paper, name: Surface area and volume of solids}
+      - {id: coordinate_geo, strand: geometry, mode: paper, name: Distance and midpoint on the coordinate plane}
+
+  - grade: 11
+    label: Grade 11, Algebra 2 (AO Year 11)
+    sources: [conventional Algebra 2 sequence]
+    topics:
+      - {id: function_ops, strand: functions, mode: paper, name: "Domain and range, composition and inverses"}
+      - {id: complex_numbers, strand: number, mode: paper, name: Complex numbers; quadratics with complex roots}
+      - {id: poly_division, strand: expressions, mode: paper, name: Polynomial division; remainder and factor theorems}
+      - {id: radical_eq, strand: equations, mode: paper, name: Rational exponents and radical equations}
+      - {id: exponential, strand: functions, mode: paper, name: Exponential growth and decay}
+      - {id: logarithms, strand: functions, mode: paper, name: Logarithms and their laws}
+      - {id: rational_functions, strand: functions, mode: paper, name: Rational functions and their graphs}
+      - {id: systems_3, strand: equations, mode: paper, name: Systems in three variables; matrices}
+      - {id: conics, strand: functions, mode: paper, name: "Parabolas, circles, ellipses and hyperbolas"}
+      - {id: series, strand: functions, mode: paper, name: Arithmetic and geometric series}
+      - {id: counting, strand: data, mode: paper, name: Permutations and combinations}
+
+  - grade: 12
+    label: Grade 12, Precalculus (AO Year 12)
+    sources: [conventional precalculus; Jacobs Mathematics, A Human Endeavor as an alternative]
+    topics:
+      - {id: unit_circle, strand: functions, mode: paper, name: Radians and the unit circle}
+      - {id: trig_graphs, strand: functions, mode: paper, name: Graphs of trigonometric functions}
+      - {id: trig_identities, strand: functions, mode: written, name: Trigonometric identities}
+      - {id: trig_equations, strand: equations, mode: paper, name: Trigonometric equations}
+      - {id: law_sines_cosines, strand: geometry, mode: paper, name: Law of sines and law of cosines}
+      - {id: vectors_polar, strand: geometry, mode: paper, name: Vectors and polar coordinates}
+      - {id: statistics, strand: data, mode: paper, name: "Normal distribution, sampling and correlation"}
+      - {id: limits, strand: functions, mode: paper, name: Limits}
+      - {id: derivatives_intro, strand: functions, mode: paper, name: The derivative as a rate of change}
