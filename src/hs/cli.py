@@ -1,12 +1,11 @@
 """The `hs` command."""
 
-import shutil
 from datetime import date as Date
 from pathlib import Path
 
 import typer
 
-from hs import config, db, grade as grading, levels, planner, render, review as reviewing
+from hs import config, db, grade as grading, levels, planner, render, review as reviewing, vault
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Personal homeschool engine.")
 
@@ -53,22 +52,31 @@ def print_(student: str = typer.Option(None, help="Only this student (default: a
 
 @app.command()
 def grade(scans: list[str] = typer.Argument(None, help="Scan PDFs or images (default: everything in inbox/).")):
-    """Read and grade scanned pages."""
+    """Read and grade scanned pages. Inbox scans are encrypted, then the originals are shredded."""
     setup()
     inbox = config.inbox_dir()
     paths = [Path(s) for s in scans] if scans else sorted(
-        p for p in inbox.glob("*") if p.suffix.lower() in (".pdf", ".png", ".jpg", ".jpeg"))
+        p for p in inbox.glob("*") if p.suffix.lower() in (".pdf", ".png", ".jpg", ".jpeg", ".enc"))
     if not paths:
         typer.echo(f"No scans found in {inbox}")
         return
+    try:
+        vault.key()
+    except vault.VaultError as e:
+        raise typer.BadParameter(str(e)) from None
     for path in paths:
         typer.secho(path.name, bold=True)
-        for line in grading.grade_file(path):
+        for line in grading.ingest(path):
             typer.echo(line)
-        if path.parent.resolve() == inbox.resolve():
-            (inbox / "processed").mkdir(exist_ok=True)
-            shutil.move(path, inbox / "processed" / path.name)
     typer.echo("Next: hs review")
+
+
+@app.command()
+def keygen():
+    """Print a new key for encrypting scans. Set it as HS_SCAN_KEY and keep a copy safe."""
+    typer.echo(vault.keygen())
+    typer.echo("\nAdd to your shell profile:  export HS_SCAN_KEY=<the key above>\n"
+               "Keep a copy in your password manager: without it, saved scans and crops can't be opened.", err=True)
 
 
 @app.command()

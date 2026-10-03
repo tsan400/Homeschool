@@ -10,6 +10,8 @@ Phase 1 covers Math only.
 
 ```sh
 uv sync
+uv run hs keygen               # once; save the key in your password manager
+export HS_SCAN_KEY=...         # the key from keygen: encrypts every saved scan image
 export ANTHROPIC_API_KEY=...   # used only to read handwriting
 ```
 
@@ -34,6 +36,32 @@ Other options:
 - `hs print --test` prints a 10-problem calibration packet that never changes levels. Use it
   to check your printer and phone scanner before the kids start.
 - `hs print --fresh` throws away today's unscanned packet and makes a new one.
+
+## Scan privacy
+
+Scans are never stored unencrypted by the engine:
+
+- `hs grade` reads an inbox scan, encrypts it to `inbox/<name>.enc`, and overwrites and deletes
+  the original **before** grading starts. All image work happens in memory.
+- The only images it keeps are the full scan (`scan.enc`) and the answer-box crops
+  (`crops/NN.enc`). Both use AES-256-GCM with `HS_SCAN_KEY`, and each file is bound to its own
+  name, so files can't be swapped or edited without detection.
+- Once every page has been used, the `inbox/*.enc` copy is deleted. If a page couldn't be used,
+  or grading crashed, the copy stays and `hs grade` retries it.
+- `hs review` shows crops in a browser tab served from memory on `127.0.0.1`, at a random path,
+  with no-cache headers. No decrypted file is written.
+- Without `HS_SCAN_KEY`, `hs grade` refuses to run and leaves the inbox untouched. If the key
+  is lost, saved crops can't be opened, but grades and levels are unaffected.
+
+What this doesn't cover:
+
+- Anything outside the engine, such as your phone's scan app, cloud sync, or the copy in your
+  photo library.
+- Answer-box crops are sent to the Anthropic API over HTTPS to be read.
+- Deleting a file on an SSD or a copy-on-write filesystem may leave old blocks behind. Full-disk
+  encryption (FileVault, BitLocker, LUKS) covers that, and is worth having anyway.
+- Packets and answer keys are blank worksheets, not scans, and are stored as normal PDFs.
+  `hs.db` and `grades.json` hold the typed transcriptions and scores, not images.
 
 ## How it works
 
@@ -63,9 +91,9 @@ Other options:
 ```
 config/            students and settings (edit these)
 content/math/      skills tree, in teaching order
-src/hs/            cli, planner, generators, render (Typst), scan, read (Claude), grade, review, levels
-data/YYYY-MM-DD/<child>/   packet.pdf, key.pdf, scan.pdf, grades.json, crops/   (gitignored)
-inbox/             drop scans here; processed files move to inbox/processed/   (gitignored)
+src/hs/            cli, planner, generators, render (Typst), scan, read (Claude), grade, review, levels, vault, viewer
+data/YYYY-MM-DD/<child>/   packet.pdf, key.pdf, grades.json, scan.enc, crops/NN.enc   (gitignored)
+inbox/             drop scans here; they are encrypted then shredded on `hs grade`   (gitignored)
 hs.db              SQLite results (gitignored, so back it up)
 ```
 

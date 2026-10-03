@@ -2,12 +2,11 @@
 
 import json
 import re
-import shutil
 from fractions import Fraction
 from math import gcd
 from pathlib import Path
 
-from hs import config, db, read, scan
+from hs import config, db, read, scan, vault
 
 # ---------- answer comparison (pure) ----------
 
@@ -66,14 +65,25 @@ def write_grades(con, ws_id: str):
     path.write_text(json.dumps({"worksheet": ws_id, "status": ws["status"], "problems": rows}, indent=1))
 
 
-def grade_file(path: Path, transcribe=read.transcribe) -> list[str]:
-    """Grade one scan file. Returns report lines."""
+def crop_label(ws_id: str, number: int) -> str:
+    return f"{ws_id}/crop/{number:02d}"
+
+
+def grade_scan(data: bytes, transcribe=read.transcribe) -> tuple[list[str], bool]:
+    """Grade one scan held in memory. Images are only ever written encrypted.
+    Returns (report lines, whether every page was used)."""
+    vault.key()  # fail before doing anything if there's no key
     st = config.settings()
     con = db.connect()
-    report, by_ws = [], {}
-    for page in scan.pages(path, st["scan_dpi"]):
+    report, by_ws, complete = [], {}, True
+    try:
+        pages = scan.pages(data, st["scan_dpi"])
+    except scan.ScanError as e:
+        return [f"  ! {e}"], False
+    for page in pages:
         if isinstance(page, scan.ScanError):
             report.append(f"  ! {page}")
+            complete = False
         else:
             by_ws.setdefault(page.qr["worksheet"], []).append(page)
 
@@ -81,22 +91,23 @@ def grade_file(path: Path, transcribe=read.transcribe) -> list[str]:
         ws = db.worksheet(con, ws_id)
         if ws is None:
             report.append(f"  ! unknown worksheet {ws_id}")
+            complete = False
             continue
         if ws["status"] == "approved":
             report.append(f"  ! {ws_id} is already approved; ignoring these pages")
             continue
         folder = config.day_dir(ws["date"], ws["student"])
-        (folder / "crops").mkdir(exist_ok=True)
         meta, items = {}, []
         for page in pages:
             for p in db.problems(con, ws_id, page.qr["page"]):
-                crop = folder / "crops" / f"{p['number']:02d}.png"
-                crop.write_bytes(page.answer_png(p["slot"]))
+                png = page.answer_png(p["slot"])
+                crop = folder / "crops" / f"{p['number']:02d}.enc"
+                vault.save(crop, png, crop_label(ws_id, p["number"]))
                 blank = page.answer_ink(p["slot"]) < scan.BLANK_INK
                 meta[p["id"]] = dict(p=p, blank=blank, crop=str(crop),
                                      stuck=page.bubble_fill(p["slot"], "stuck"), easy=page.bubble_fill(p["slot"], "easy"))
                 if not blank:
-                    items.append({"id": str(p["id"]), "png": crop.read_bytes(), "hint": p["hint"]})
+                    items.append({"id": str(p["id"]), "png": png, "hint": p["hint"]})
         reads = transcribe(items)
 
         for pid, m in meta.items():
@@ -126,9 +137,9 @@ def grade_file(path: Path, transcribe=read.transcribe) -> list[str]:
         con.execute("UPDATE worksheet SET status=? WHERE id=?", (status, ws_id))
         con.commit()
         n = 1
-        while (dest := folder / f"scan{'' if n == 1 else f'-{n}'}{path.suffix.lower()}").exists():
+        while (dest := folder / f"scan{'' if n == 1 else f'-{n}'}.enc").exists():
             n += 1
-        shutil.copy(path, dest)
+        vault.save(dest, data, f"{ws_id}/scan/{dest.name}")
         write_grades(con, ws_id)
 
         scanned = [r for r in rows if r["scanned"]]
@@ -136,4 +147,29 @@ def grade_file(path: Path, transcribe=read.transcribe) -> list[str]:
         report.append(f"  {ws_id}: {sum(r['correct'] for r in scanned)}/{len(scanned)} correct, "
                       f"{sum(r['stuck'] for r in scanned)} stuck, {flagged} to review"
                       + ("" if status == "graded" else f", {len(rows) - len(scanned)} problems not scanned yet"))
+    return report, complete
+
+
+def ingest(path: Path, transcribe=read.transcribe) -> list[str]:
+    """Grade a scan file. An inbox scan is encrypted to inbox/<name>.enc and the plaintext
+    shredded *before* grading, so a crash never leaves it behind. The encrypted copy is
+    deleted once every page has been used; otherwise it stays for `hs grade` to retry."""
+    vault.key()
+    inbox = config.inbox_dir()
+    in_inbox = path.parent.resolve() == inbox.resolve()
+    held = path.suffix == ".enc"
+    label = f"inbox/{path.stem if held else path.name}"
+    data = vault.load(path, label) if held else path.read_bytes()
+    if in_inbox and not held:
+        enc = inbox / f"{path.name}.enc"
+        vault.save(enc, data, label)
+        vault.shred(path)
+        path, held = enc, True
+    report, complete = grade_scan(data, transcribe)
+    if not in_inbox and not held:
+        report.append(f"  note: {path} is outside inbox/ and was left in place (unencrypted)")
+    elif in_inbox and complete:
+        path.unlink()
+    elif in_inbox:
+        report.append(f"  kept encrypted as inbox/{path.name}; fix the problem above and run `hs grade` again")
     return report

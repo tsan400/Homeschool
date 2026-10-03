@@ -4,7 +4,8 @@ import re
 
 import typer
 
-from hs import config, db, grade, levels
+from hs import config, db, grade, levels, vault
+from hs.viewer import Viewer
 
 HELP = "[Enter] ok  [t] type what was written  [c] correct  [w] wrong  [s] stuck  [e] too easy  [x] exclude  [q] quit"
 
@@ -43,12 +44,15 @@ def set_(con, pid, **cols):
     con.commit()
 
 
-def edit(con, ws_id, number, open_images) -> bool:
+def edit(con, ws_id, number, view) -> bool:
     """Interactive edit of one problem. Returns False if the user quit."""
     row = lambda: next(r for r in db.results(con, ws_id) if r["number"] == number)
     r = row()
-    if open_images and r["scanned"] and r["crop"]:
-        typer.launch(r["crop"])
+    if view and r["scanned"] and r["crop"]:
+        try:
+            view.show(vault.load(r["crop"], grade.crop_label(ws_id, number)), f"{ws_id} #{number}")
+        except (OSError, vault.VaultError) as e:
+            typer.secho(f"   (can't show the answer image: {e})", fg="yellow")
     while True:
         show(r)
         if not r["scanned"]:
@@ -100,6 +104,17 @@ def summary(rows):
 
 
 def run(student: str | None = None, open_images: bool = True):
+    view = Viewer() if open_images else None
+    if view:
+        typer.echo(f"Answer images show in your browser (served from memory, never saved): {view.url}")
+    try:
+        _run(student, view)
+    finally:
+        if view:
+            view.close()
+
+
+def _run(student, view):
     con = db.connect()
     sql = "SELECT * FROM worksheet WHERE status IN ('graded', 'partial')" + (" AND student=?" if student else "") + " ORDER BY date, student"
     worksheets = con.execute(sql, (student,) if student else ()).fetchall()
@@ -110,7 +125,7 @@ def run(student: str | None = None, open_images: bool = True):
         typer.secho(f"\n=== {ws['id']} ({ws['status']}) ===", bold=True, fg="cyan")
         for r in db.results(con, ws["id"]):
             needs = (r["scanned"] and r["reason"] and not r["reviewed"]) or not r["scanned"]
-            if needs and not edit(con, ws["id"], r["number"], open_images):
+            if needs and not edit(con, ws["id"], r["number"], view):
                 return
         while True:
             rows = db.results(con, ws["id"])
@@ -121,7 +136,7 @@ def run(student: str | None = None, open_images: bool = True):
             choice = typer.prompt("Approve and update levels? [y] yes  [n] not now  [number] edit a problem",
                                   default="n").strip().lower()
             if choice.isdigit():
-                if not edit(con, ws["id"], int(choice), open_images):
+                if not edit(con, ws["id"], int(choice), view):
                     return
                 continue
             if choice == "y" and not missing:

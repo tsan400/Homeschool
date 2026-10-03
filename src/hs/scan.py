@@ -1,7 +1,6 @@
 """Scan input: PDF/image pages -> straightened page images, QR payloads, crops, bubble fill."""
 
 from dataclasses import dataclass
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -55,13 +54,14 @@ class Page:
         return buf.tobytes()
 
 
-def load_images(path: Path, dpi: int) -> list[np.ndarray]:
-    if path.suffix.lower() == ".pdf":
-        pdf = pdfium.PdfDocument(str(path))
+def load_images(data: bytes, dpi: int) -> list[np.ndarray]:
+    """Decode a PDF or image held in memory. Nothing is written to disk."""
+    if data.startswith(b"%PDF"):
+        pdf = pdfium.PdfDocument(data)
         return [np.array(page.render(scale=dpi / 72, grayscale=True).to_pil().convert("L")) for page in pdf]
-    img = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_GRAYSCALE)
     if img is None:
-        raise ScanError(f"can't read image {path}")
+        raise ScanError("not a PDF or an image this program can read")
     return [img]
 
 
@@ -95,11 +95,11 @@ def read_qr(page: np.ndarray, scale: float) -> dict | None:
     return None
 
 
-def pages(path: Path, dpi: int = 200) -> list[Page | ScanError]:
-    """Every page of a scan, straightened and identified, or the error that stopped it."""
+def pages(data: bytes, dpi: int = 200) -> list[Page | ScanError]:
+    """Every page of a scan (bytes in memory), straightened and identified, or the error that stopped it."""
     scale = dpi / 72
     out = []
-    for n, img in enumerate(load_images(path, dpi), 1):
+    for n, img in enumerate(load_images(data, dpi), 1):
         try:
             flat = straighten(img, scale)
             qr = read_qr(flat, scale)

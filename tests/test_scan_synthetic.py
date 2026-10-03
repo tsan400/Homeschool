@@ -12,7 +12,7 @@ import os
 import pytest
 from PIL import Image
 
-from hs import config, db, grade, levels, planner, read, render
+from hs import config, db, grade, levels, planner, read, render, vault
 from synthetic import fill_in, phone_scan, to_pdf
 
 DATE, NEXT = "2026-10-05", "2026-10-06"
@@ -51,8 +51,9 @@ def test_scan_grade_approve_and_scaffold(con, scanned):
         return {i["id"]: {"text": written[by_id[i["id"]]], "confidence": 0.5 if by_id[i["id"]] == 5 else 0.97, "note": ""}
                 for i in items}
 
-    report = grade.grade_file(scan, transcribe=fake_reader)
+    report = grade.ingest(scan, transcribe=fake_reader)
     assert not any("!" in line for line in report), report
+    assert_no_plaintext_images()
 
     # Blank detection and crop alignment: exactly the boxes we wrote in were sent to the reader.
     assert sorted(asked) == sorted(written)
@@ -72,7 +73,8 @@ def test_scan_grade_approve_and_scaffold(con, scanned):
     ws = db.worksheet(con, ws_id)
     assert ws["status"] == "graded"
     folder = config.day_dir(DATE, "timothy")
-    assert (folder / "scan.pdf").exists()
+    assert vault.load(folder / "scan.enc", f"{ws_id}/scan/scan.enc").startswith(b"%PDF")
+    assert vault.load(r[1]["crop"], grade.crop_label(ws_id, 1)).startswith(b"\x89PNG")
     assert len(json.loads((folder / "grades.json").read_text())["problems"]) == len(probs)
 
     # Approve: sessions are recorded per skill for new problems.
@@ -95,8 +97,49 @@ def test_scan_grade_approve_and_scaffold(con, scanned):
 def test_live_transcription(con, scanned):
     """Real Claude read of the synthetic page (printed 'handwriting', so it should be near perfect)."""
     ws_id, probs, written, scan = scanned
-    grade.grade_file(scan, transcribe=read.transcribe)
+    grade.ingest(scan, transcribe=read.transcribe)
     rows = {r["number"]: r for r in db.results(con, ws_id)}
     matches = sum(grade.check(rows[n]["transcription"], text, "value" if "R" not in text else "remainder") is True
                   for n, text in written.items())
     assert matches >= 0.9 * len(written), {n: (rows[n]["transcription"], t) for n, t in written.items()}
+
+
+def assert_no_plaintext_images():
+    """After grading, the only image data left anywhere in the engine's home is encrypted."""
+    home = config.home()
+    allowed = {"hs.db", "packet.pdf", "key.pdf", "grades.json"}  # packets are blank worksheets, not scans
+    for f in home.rglob("*"):
+        if f.is_file():
+            assert f.suffix == ".enc" or f.name in allowed, f"unexpected file at rest: {f}"
+            if f.suffix == ".enc":
+                head = f.read_bytes()[:64]
+                assert head.startswith(vault.MAGIC) and b"PNG" not in head and b"%PDF" not in head
+    assert not list(config.inbox_dir().iterdir()), "inbox should be empty after a complete grade"
+
+
+def test_crash_mid_grade_leaves_only_encrypted_copy(con, scanned):
+    ws_id, probs, written, scan = scanned
+
+    def broken_reader(items):
+        raise ConnectionError("API unavailable")
+
+    with pytest.raises(ConnectionError):
+        grade.ingest(scan, transcribe=broken_reader)
+    assert not scan.exists()                    # plaintext shredded before grading started
+    held = config.inbox_dir() / (scan.name + ".enc")
+    assert held.exists() and held.read_bytes().startswith(vault.MAGIC)
+
+    by_id = {str(p["id"]): n for n, p in probs.items()}
+    report = grade.ingest(held, transcribe=lambda items: {
+        i["id"]: {"text": written[by_id[i["id"]]], "confidence": 0.97, "note": ""} for i in items})
+    assert not any("!" in line for line in report), report
+    assert not held.exists()                    # retried from the encrypted copy, then removed
+    assert_no_plaintext_images()
+
+
+def test_grading_refuses_without_key(con, scanned, monkeypatch):
+    *_, scan = scanned
+    monkeypatch.delenv(vault.ENV)
+    with pytest.raises(vault.VaultError):
+        grade.ingest(scan, transcribe=lambda items: {})
+    assert scan.exists()  # nothing was touched
