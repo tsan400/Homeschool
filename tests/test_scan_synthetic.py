@@ -32,7 +32,8 @@ def scanned(con, family):
     answers = {(probs[n]["page"], probs[n]["slot"]): t for n, t in written.items()}
     marks = {(probs[1]["page"], probs[1]["slot"], "stuck"): 1,
              (probs[4]["page"], probs[4]["slot"], "easy"): 1,
-             (probs[6]["page"], probs[6]["slot"], "stuck"): 0.5}  # a tick, not a fill
+             (probs[7]["page"], probs[7]["slot"], "easy"): 0.5,     # a tick counts too
+             (probs[6]["page"], probs[6]["slot"], "stuck"): 0.2}    # a stray dot is unclear
     packet = vault.get(con, fid, packets.packet_name(ws_id))
     pages = [phone_scan(img, seed) for seed, img in enumerate(fill_in(packet, answers, marks))]
     pages = pages[::-1]                               # scanned in the wrong order
@@ -70,10 +71,11 @@ def test_upload_grade_approve_and_scaffold(con, scanned):
     assert all(r[n]["correct"] for n in probs if n not in (2, 3))
     assert r[1]["stuck"] and not r[1]["too_easy"]
     assert r[4]["too_easy"] and not r[4]["stuck"]
+    assert r[7]["too_easy"]
     assert "unclear 'stuck' mark" in r[6]["reason"]
     assert "low confidence" in r[5]["reason"]
     assert sum(bool(row["stuck"]) for row in r.values()) == 1
-    assert sum(bool(row["too_easy"]) for row in r.values()) == 1
+    assert sum(bool(row["too_easy"]) for row in r.values()) == 2
     assert not any(row["reason"] for n, row in r.items() if n not in (5, 6))
 
     ws = db.worksheet(con, ws_id)
@@ -148,3 +150,4 @@ def assert_only_encrypted_files():
             assert b"PNG" not in head and b"%PDF" not in head and b"JFIF" not in head
     stray = [f for f in config.home().iterdir() if f.is_file() and not f.name.startswith("hs.db")]
     assert not stray, stray
+

@@ -39,8 +39,11 @@ def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150) -> list[Image.Im
                 if amount >= 1:
                     rr = r * 0.85
                     d.ellipse([(cx - rr) * s, (cy - rr) * s, (cx + rr) * s, (cy + rr) * s], fill=80)
-                else:  # a small tick: an ambiguous mark
-                    d.line([((cx - 4) * s, cy * s), (cx * s, (cy + 4) * s), ((cx + 6) * s, (cy - 6) * s)], fill=60, width=int(2 * s))
+                elif amount >= 0.5:  # a tick, the way children actually mark it: counts as marked
+                    d.line([((cx - 6) * s, cy * s), ((cx - 1) * s, (cy + 6) * s), ((cx + 10) * s, (cy - 12) * s)], fill=90, width=int(1.5 * s))
+                else:  # a stray dot: too little to call, goes to review
+                    rr = 0.9
+                    d.ellipse([(cx - rr) * s, (cy - rr) * s, (cx + rr) * s, (cy + rr) * s], fill=80)
         pages.append(img)
     return pages
 

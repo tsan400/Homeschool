@@ -1,4 +1,4 @@
-"""Scan input: PDF/image pages -> straightened page images, QR payloads, crops, bubble fill."""
+"""Scan input: PDF/image pages -> straightened page images, QR payloads, crops, marks."""
 
 from dataclasses import dataclass
 
@@ -9,10 +9,13 @@ import pypdfium2 as pdfium
 from hs import layout as L
 
 DICT = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-INK = 0.70             # a pixel is ink if darker than this fraction of the paper's brightness
-BUBBLE_FILLED = 0.45   # share of a bubble's interior that is ink
-BUBBLE_EMPTY = 0.12
-BLANK_INK = 0.004      # answer box with less ink than this is blank
+INK = 0.75             # a pixel is ink if darker than this fraction of the paper's brightness
+SEARCH = 10            # pixels: how far a patch may be off after straightening (paper curl)
+# Marks are measured as ink that isn't on the blank printed page, so a tick, a cross and a
+# filled circle all count. Tuned on phone photos: empty circles read 0.000, light pencil ticks 0.03+.
+BUBBLE_MARKED = 0.015  # share of the area around a circle that is the child's ink
+BUBBLE_EMPTY = 0.005   # between the two -> "unclear", sent to review
+BLANK_INK = 0.001      # answer box with less of the child's ink than this is blank
 
 
 class ScanError(Exception):
@@ -23,8 +26,9 @@ class ScanError(Exception):
 class Page:
     image: np.ndarray   # straightened grayscale page, PAGE_W*scale x PAGE_H*scale
     scale: float        # pixels per point
-    qr: dict            # parsed payload: student, date, worksheet, page
+    qr: dict            # parsed payload: worksheet, page
     paper: float        # brightness of blank paper
+    blank: np.ndarray | None = None  # the same page as printed, rendered at the same scale
 
     def px(self, v: float) -> int:
         return int(round(v * self.scale))
@@ -32,21 +36,31 @@ class Page:
     def crop(self, x, y, w, h, pad=0.0) -> np.ndarray:
         return self.image[self.px(y - pad):self.px(y + h + pad), self.px(x - pad):self.px(x + w + pad)]
 
-    def ink(self, region: np.ndarray) -> np.ndarray:
-        return region < self.paper * INK
+    def added_ink(self, x, y, w, h) -> np.ndarray:
+        """Boolean mask of ink in this area that isn't printed on the blank page.
+        The area is first aligned locally against the blank page, because a curled page in a
+        phone photo can still be a few pixels off after straightening."""
+        x0, y0, x1, y1 = self.px(x), self.px(y), self.px(x + w), self.px(y + h)
+        printed = self.blank[y0:y1, x0:x1]
+        around = self.image[max(0, y0 - SEARCH):y1 + SEARCH, max(0, x0 - SEARCH):x1 + SEARCH]
+        match = cv2.matchTemplate(around.astype(np.float32), printed.astype(np.float32), cv2.TM_CCOEFF_NORMED)
+        dx, dy = cv2.minMaxLoc(match)[3]
+        region = around[dy:dy + printed.shape[0], dx:dx + printed.shape[1]]
+        mask = cv2.dilate((printed < 200).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
+        return (region < self.paper * INK) & ~mask
 
     def bubble_fill(self, slot: int, which: str) -> float:
         cx, cy, r = L.bubble(slot, which)
-        inner = r * 0.6  # stay inside the printed outline
-        region = self.crop(cx - inner, cy - inner, 2 * inner, 2 * inner)
-        h, w = region.shape
+        R = r * 1.4  # ticks often stray past the outline
+        added = self.added_ink(cx - R, cy - R, 2 * R, 2 * R)
+        h, w = added.shape
         yy, xx = np.mgrid[:h, :w]
         disc = (xx - w / 2 + 0.5) ** 2 + (yy - h / 2 + 0.5) ** 2 <= (min(h, w) / 2) ** 2
-        return float(self.ink(region)[disc].mean())
+        return float(added[disc].mean())
 
     def answer_ink(self, slot: int) -> float:
         x, y, w, h = L.answer_box(slot)
-        return float(self.ink(self.crop(x + 6, y + 6, w - 12, h - 12)).mean())
+        return float(self.added_ink(x - 4, y - 4, w + 8, h + 8).mean())
 
     def answer_png(self, slot: int) -> bytes:
         """The answer box plus a small margin, for the handwriting reader and the review queue."""

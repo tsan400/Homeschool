@@ -5,7 +5,10 @@ import re
 from fractions import Fraction
 from math import gcd
 
-from hs import config, db, read, scan, vault
+import numpy as np
+import pypdfium2 as pdfium
+
+from hs import config, db, packets, read, scan, vault
 
 # ---------- answer comparison (pure) ----------
 
@@ -90,8 +93,10 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
             continue
         meta, items = {}, []
         scanned_pages = set(json.loads(ws["scanned_pages"]))
+        printed = pdfium.PdfDocument(vault.get(con, family_id, packets.packet_name(ws_id)))
         for page in pages:
             n = page.qr["page"]
+            page.blank = np.array(printed[n - 1].render(scale=page.scale, grayscale=True).to_pil().convert("L"))
             vault.put(con, family_id, page_name(ws_id, n), page.jpeg())
             scanned_pages.add(n)
             for p in db.problems(con, ws_id, n):
@@ -119,8 +124,8 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
                     reasons.append(f"low confidence ({conf:.2f})" + (f": {r['note']}" if r.get("note") else ""))
             marks = {}
             for which, fill in (("stuck", m["stuck"]), ("too easy", m["easy"])):
-                marks[which] = fill >= scan.BUBBLE_FILLED
-                if scan.BUBBLE_EMPTY < fill < scan.BUBBLE_FILLED:
+                marks[which] = fill >= scan.BUBBLE_MARKED
+                if scan.BUBBLE_EMPTY < fill < scan.BUBBLE_MARKED:
                     reasons.append(f"unclear '{which}' mark")
             con.execute("""INSERT OR REPLACE INTO response (problem_id, transcription, confidence, blank, stuck, too_easy,
                            stuck_fill, easy_fill, correct, reason, crop) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
