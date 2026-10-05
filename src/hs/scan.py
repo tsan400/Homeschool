@@ -9,12 +9,13 @@ import pypdfium2 as pdfium
 from hs import layout as L
 
 DICT = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-INK = 0.75             # a pixel is ink if darker than this fraction of the paper's brightness
+INK = 0.85             # a pixel is ink if darker than this fraction of the paper around it
 SEARCH = 10            # pixels: how far a patch may be off after straightening (paper curl)
 # Marks are measured as ink that isn't on the blank printed page, so a tick, a cross and a
-# filled circle all count. Tuned on phone photos: empty circles read 0.000, light pencil ticks 0.03+.
-BUBBLE_MARKED = 0.015  # share of the area around a circle that is the child's ink
-BUBBLE_EMPTY = 0.005   # between the two -> "unclear", sent to review
+# filled circle all count. Tuned on real phone photos of light pencil: empty circles read
+# up to 0.007, ticks 0.029 and up; empty boxes 0.000, a single faint "1" 0.0035.
+BUBBLE_MARKED = 0.02   # share of the area around a circle that is the child's ink
+BUBBLE_EMPTY = 0.012   # between the two -> "unclear", sent to review
 BLANK_INK = 0.001      # answer box with less of the child's ink than this is blank
 
 
@@ -29,6 +30,14 @@ class Page:
     qr: dict            # parsed payload: worksheet, page
     paper: float        # brightness of blank paper
     blank: np.ndarray | None = None  # the same page as printed, rendered at the same scale
+    _paper_map: np.ndarray | None = None
+
+    def paper_map(self) -> np.ndarray:
+        """Brightness of the paper around each pixel (strokes removed), so shadows and uneven
+        light don't hide faint pencil or turn into fake marks."""
+        if self._paper_map is None:
+            self._paper_map = cv2.GaussianBlur(cv2.dilate(self.image, np.ones((15, 15), np.uint8)), (0, 0), 15)
+        return self._paper_map
 
     def px(self, v: float) -> int:
         return int(round(v * self.scale))
@@ -42,12 +51,13 @@ class Page:
         phone photo can still be a few pixels off after straightening."""
         x0, y0, x1, y1 = self.px(x), self.px(y), self.px(x + w), self.px(y + h)
         printed = self.blank[y0:y1, x0:x1]
-        around = self.image[max(0, y0 - SEARCH):y1 + SEARCH, max(0, x0 - SEARCH):x1 + SEARCH]
+        window = (slice(max(0, y0 - SEARCH), y1 + SEARCH), slice(max(0, x0 - SEARCH), x1 + SEARCH))
+        around, paper = self.image[window], self.paper_map()[window]
         match = cv2.matchTemplate(around.astype(np.float32), printed.astype(np.float32), cv2.TM_CCOEFF_NORMED)
         dx, dy = cv2.minMaxLoc(match)[3]
-        region = around[dy:dy + printed.shape[0], dx:dx + printed.shape[1]]
+        at = (slice(dy, dy + printed.shape[0]), slice(dx, dx + printed.shape[1]))
         mask = cv2.dilate((printed < 200).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
-        return (region < self.paper * INK) & ~mask
+        return (around[at] < paper[at] * INK) & ~mask
 
     def bubble_fill(self, slot: int, which: str) -> float:
         cx, cy, r = L.bubble(slot, which)
@@ -59,8 +69,12 @@ class Page:
         return float(added[disc].mean())
 
     def answer_ink(self, slot: int) -> float:
+        """Share of the box's inside covered by the child's ink. The border itself is left out:
+        on a curled page it never lines up exactly and would look like writing."""
         x, y, w, h = L.answer_box(slot)
-        return float(self.added_ink(x - 4, y - 4, w + 8, h + 8).mean())
+        added = self.added_ink(x - 4, y - 4, w + 8, h + 8)
+        k = self.px(8)
+        return float(added[k:-k, k:-k].mean())
 
     def answer_png(self, slot: int) -> bytes:
         """The answer box plus a small margin, for the handwriting reader and the review queue."""
@@ -104,18 +118,19 @@ def straighten(img: np.ndarray, scale: float) -> np.ndarray:
 
 
 def read_qr(page: np.ndarray, scale: float) -> dict | None:
-    """Decode the page's QR code. Phone photos can be soft or noisy, so try progressively
-    cleaned-up versions of the QR corner before falling back to the whole page."""
+    """Decode the page's QR code. Phone photos can be soft, shadowed or noisy, so try two
+    detectors on progressively cleaned-up versions of the QR corner, then the whole page."""
     x, y, s = L.QR
     m = 20
     region = page[int((y - m) * scale):int((y + s + m) * scale), int((x - m) * scale):int((x + s + m) * scale)]
     big = cv2.resize(region, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-    otsu = cv2.threshold(cv2.GaussianBlur(big, (5, 5), 0), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-    det = cv2.QRCodeDetector()
-    for candidate in (region, big, otsu, page):
-        text, *_ = det.detectAndDecode(candidate)
-        if text and (payload := L.parse_qr(text)):
-            return payload
+    sharp = cv2.addWeighted(big, 2.0, cv2.GaussianBlur(big, (0, 0), 4), -1.0, 0)
+    otsu = cv2.threshold(sharp, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    for det in (cv2.QRCodeDetectorAruco(), cv2.QRCodeDetector()):
+        for candidate in (region, big, otsu, page):
+            text, *_ = det.detectAndDecode(candidate)
+            if text and (payload := L.parse_qr(text)):
+                return payload
     return None
 
 

@@ -30,6 +30,7 @@ def scanned(con, family):
     probs = {p["number"]: p for p in db.problems(con, ws_id)}
     written = {n: (wrong(p["answer"]) if n == 2 else p["answer"]) for n, p in probs.items() if n != 3}  # 3 left blank
     answers = {(probs[n]["page"], probs[n]["slot"]): t for n, t in written.items()}
+    answers[probs[8]["page"], probs[8]["slot"]] = (written[8], 200)   # small, faint pencil still counts
     marks = {(probs[1]["page"], probs[1]["slot"], "stuck"): 1,
              (probs[4]["page"], probs[4]["slot"], "easy"): 1,
              (probs[7]["page"], probs[7]["slot"], "easy"): 0.5,     # a tick counts too

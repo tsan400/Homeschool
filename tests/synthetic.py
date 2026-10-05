@@ -30,8 +30,9 @@ def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150) -> list[Image.Im
         d = ImageDraw.Draw(img)
         for (pg, slot), text in answers.items():
             if pg == n:
+                text, shade = text if isinstance(text, tuple) else (text, 70)  # (text, 200) = faint pencil
                 x, y, w, h = L.answer_box(slot)
-                d.text(((x + 10) * s, (y + 14) * s), text, fill=70, font=font(int(26 * s)))
+                d.text(((x + 10) * s, (y + 14) * s), text, fill=shade, font=font(int(18 * s)) if shade > 100 else font(int(26 * s)))
                 d.text(((64) * s, (L.slot_top(slot) + 50) * s), "work...", fill=110, font=font(int(14 * s)))
         for (pg, slot, which), amount in marks.items():
             if pg == n:
