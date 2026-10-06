@@ -16,6 +16,7 @@ levels:
 
 math:
   problems_per_day: 15
+  problems_per_page: 6  # 3-6; packets keep the layout they were printed with
   review_fraction: 0.2  # share of problems spent on spaced review of mastered skills
   active_skills: 3      # how many unmastered skills to work on at once
   min_per_skill: 4

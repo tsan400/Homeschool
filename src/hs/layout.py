@@ -12,25 +12,34 @@ MARKERS = {0: (24, 24), 1: (552, 24), 2: (24, 732), 3: (552, 732)}  # id -> top-
 
 QR = (468, 22, 76)  # x, y, size: just left of the top-right marker
 
-BODY_TOP, SLOT_H, SLOTS = 112, 122, 5  # five problems per page
+BODY_TOP, BODY_BOTTOM = 112, 722  # problems are spaced evenly between these
+LEGACY_SLOTS = 5   # packets printed before the per-packet setting existed had five per page
 
 ANSWER_X, ANSWER_DY, ANSWER_W, ANSWER_H = 380, 18, 132, 58
 BUBBLE_X, BUBBLE_R = 532, 9
 BUBBLE_DY = {"stuck": 32, "easy": 70}
 
 
-def slot_top(slot: int) -> float:
-    return BODY_TOP + (slot - 1) * SLOT_H
+def slot_h(slots: int) -> float:
+    return (BODY_BOTTOM - BODY_TOP) / slots
 
 
-def answer_box(slot: int) -> tuple[float, float, float, float]:
+def slot_top(slot: int, slots: int) -> float:
+    """Top of a problem's band. `slots` is problems per page, stored with each packet page so a
+    packet always scans with the layout it was printed with."""
+    if slots * (ANSWER_DY + ANSWER_H + 6) > BODY_BOTTOM - BODY_TOP:
+        raise ValueError(f"{slots} problems per page don't fit")
+    return BODY_TOP + (slot - 1) * slot_h(slots)
+
+
+def answer_box(slot: int, slots: int) -> tuple[float, float, float, float]:
     """x, y, w, h of the answer box."""
-    return ANSWER_X, slot_top(slot) + ANSWER_DY, ANSWER_W, ANSWER_H
+    return ANSWER_X, slot_top(slot, slots) + ANSWER_DY, ANSWER_W, ANSWER_H
 
 
-def bubble(slot: int, which: str) -> tuple[float, float, float]:
+def bubble(slot: int, which: str, slots: int) -> tuple[float, float, float]:
     """cx, cy, r of a margin bubble ('stuck' or 'easy')."""
-    return BUBBLE_X, slot_top(slot) + BUBBLE_DY[which], BUBBLE_R
+    return BUBBLE_X, slot_top(slot, slots) + BUBBLE_DY[which], BUBBLE_R
 
 
 def marker_corners(marker_id: int) -> list[tuple[float, float]]:

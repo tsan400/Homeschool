@@ -59,16 +59,16 @@ def page_frame(build: Path, ws, page: int, total: int, student_name: str) -> str
     return out
 
 
-def problem_slot(p) -> str:
-    top = L.slot_top(p["slot"])
-    x, y, w, h = L.answer_box(p["slot"])
+def problem_slot(p, slots: int) -> str:
+    top = L.slot_top(p["slot"], slots)
+    x, y, w, h = L.answer_box(p["slot"], slots)
     out = at(24, top, f"#line(length: {L.PAGE_W - 48}pt, stroke: 0.5pt + gray)")
     out += at(30, top + 16, f'#text(weight: "bold")[{p["number"]}.]')
     out += at(64, top + 16, f'#block(width: 300pt)[#set text(size: 18pt)\n{big(p["prompt"])}]')
     out += at(x, y - 13, "#text(size: 9pt, fill: gray)[Answer]")
     out += at(x, y, f"#rect(width: {w}pt, height: {h}pt, stroke: 1.2pt, radius: 4pt)")
     for which, label in (("stuck", "stuck"), ("easy", "too easy")):
-        cx, cy, r = L.bubble(p["slot"], which)
+        cx, cy, r = L.bubble(p["slot"], which, slots)
         out += at(cx - r, cy - r, f"#circle(radius: {r}pt, stroke: 1pt)")
         out += at(cx + r + 4, cy - 6, f"#text(size: 10pt)[{label}]")
     return out
@@ -115,7 +115,7 @@ def render(con, ws_id: str) -> tuple[bytes, bytes]:
             else:
                 if pg["page"] == next(p["page"] for p in pages if p["kind"] == "problems"):
                     src += instructions()
-                src += "".join(problem_slot(p) for p in probs if p["page"] == pg["page"])
+                src += "".join(problem_slot(p, pg.get("slots", L.LEGACY_SLOTS)) for p in probs if p["page"] == pg["page"])
             parts.append(src)
         compile_typ(HEADER + "#pagebreak()\n".join(parts), build, build / "packet.pdf")
 

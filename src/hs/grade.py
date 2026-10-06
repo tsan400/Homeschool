@@ -8,7 +8,7 @@ from math import gcd
 import numpy as np
 import pypdfium2 as pdfium
 
-from hs import config, db, packets, read, scan, vault
+from hs import config, db, layout as L, packets, read, scan, vault
 
 # ---------- answer comparison (pure) ----------
 
@@ -94,8 +94,10 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
         meta, items = {}, []
         scanned_pages = set(json.loads(ws["scanned_pages"]))
         printed = pdfium.PdfDocument(vault.get(con, family_id, packets.packet_name(ws_id)))
+        layout = {pg["page"]: pg.get("slots", L.LEGACY_SLOTS) for pg in json.loads(ws["pages"])}
         for page in pages:
             n = page.qr["page"]
+            page.slots = layout.get(n, L.LEGACY_SLOTS)
             page.blank = np.array(printed[n - 1].render(scale=page.scale, grayscale=True).to_pil().convert("L"))
             vault.put(con, family_id, page_name(ws_id, n), page.jpeg())
             scanned_pages.add(n)

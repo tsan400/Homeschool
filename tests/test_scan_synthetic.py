@@ -12,7 +12,7 @@ import os
 import pytest
 from PIL import Image
 
-from hs import accounts, config, db, grade, jobs, levels, packets, planner, read, vault
+from hs import accounts, config, db, grade, jobs, levels, packets, planner, read, render, vault
 from synthetic import fill_in, phone_scan, to_pdf
 
 DATE, NEXT = "2026-10-05", "2026-10-06"
@@ -152,3 +152,24 @@ def assert_only_encrypted_files():
     stray = [f for f in config.home().iterdir() if f.is_file() and not f.name.startswith("hs.db")]
     assert not stray, stray
 
+
+
+def test_packets_keep_the_layout_they_were_printed_with(con, family):
+    """A packet printed with five problems per page (before the setting existed) still scans
+    after the default changes."""
+    fid, kids = family
+    ws_id = packets.make(con, kids["hannah"], DATE)
+    pages = json.loads(db.worksheet(con, ws_id)["pages"])
+    for pg in pages:
+        pg.pop("slots", None)                       # what an old packet row looks like
+    con.execute("UPDATE worksheet SET pages=? WHERE id=?", (json.dumps(pages), ws_id))
+    con.execute("UPDATE problem SET page = 1 + (number - 1) / 5, slot = 1 + (number - 1) % 5 WHERE worksheet_id=?", (ws_id,))
+    con.commit()
+    probs = {p["number"]: p for p in db.problems(con, ws_id)}
+    packet, _ = render.render(con, ws_id)
+    vault.put(con, fid, packets.packet_name(ws_id), packet)
+    answers = {(p["page"], p["slot"]): p["answer"] for p in probs.values()}
+    scan_pdf = to_pdf([phone_scan(img, i) for i, img in enumerate(fill_in(packet, answers, {}, slots=5))])
+    report, complete = grade.grade_scan(con, fid, scan_pdf, reader_for(probs, {n: p["answer"] for n, p in probs.items()}))
+    assert complete, report
+    assert all(r["correct"] for r in db.results(con, ws_id))

@@ -66,8 +66,9 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
     pages = [{"page": i + 1, "kind": "examples", "sources": sources[j:j + EXAMPLES_PER_PAGE]}
              for i, j in enumerate(range(0, len(sources), EXAMPLES_PER_PAGE))]
     first_problem_page = len(pages) + 1
-    n_pages = -(-len(specs) // L.SLOTS)
-    pages += [{"page": first_problem_page + i, "kind": "problems"} for i in range(n_pages)]
+    per = config.settings()["math"]["problems_per_page"]
+    n_pages = -(-len(specs) // per)
+    pages += [{"page": first_problem_page + i, "kind": "problems", "slots": per} for i in range(n_pages)]
 
     con.execute("INSERT INTO worksheet (id, student, date, subject, kind, status, pages) VALUES (?,?,?,?,?,?,?)",
                 (ws_id, student, date, "math", kind, "printed", json.dumps(pages)))
@@ -81,7 +82,7 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
         seen.add(prob.prompt)
         con.execute("""INSERT INTO problem (worksheet_id, page, slot, number, skill, level, kind, seed,
                        prompt, answer, form, hint, steps, source_problem_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                    (ws_id, first_problem_page + i // L.SLOTS, i % L.SLOTS + 1, i + 1, spec["skill"], spec["level"],
+                    (ws_id, first_problem_page + i // per, i % per + 1, i + 1, spec["skill"], spec["level"],
                      spec["kind"], seed, prob.prompt, prob.answer, prob.form, prob.hint, json.dumps(prob.steps),
                      spec.get("source")))
     con.executemany("UPDATE response SET scaffolded=1 WHERE problem_id=?", [(pid,) for pid in sources])

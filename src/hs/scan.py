@@ -30,6 +30,7 @@ class Page:
     qr: dict            # parsed payload: worksheet, page
     paper: float        # brightness of blank paper
     blank: np.ndarray | None = None  # the same page as printed, rendered at the same scale
+    slots: int = L.LEGACY_SLOTS      # problems on this page, from the packet's layout
     _paper_map: np.ndarray | None = None
 
     def paper_map(self) -> np.ndarray:
@@ -60,7 +61,7 @@ class Page:
         return (around[at] < paper[at] * INK) & ~mask
 
     def bubble_fill(self, slot: int, which: str) -> float:
-        cx, cy, r = L.bubble(slot, which)
+        cx, cy, r = L.bubble(slot, which, self.slots)
         R = r * 1.4  # ticks often stray past the outline
         added = self.added_ink(cx - R, cy - R, 2 * R, 2 * R)
         h, w = added.shape
@@ -71,14 +72,14 @@ class Page:
     def answer_ink(self, slot: int) -> float:
         """Share of the box's inside covered by the child's ink. The border itself is left out:
         on a curled page it never lines up exactly and would look like writing."""
-        x, y, w, h = L.answer_box(slot)
+        x, y, w, h = L.answer_box(slot, self.slots)
         added = self.added_ink(x - 4, y - 4, w + 8, h + 8)
         k = self.px(8)
         return float(added[k:-k, k:-k].mean())
 
     def answer_png(self, slot: int) -> bytes:
         """The answer box plus a small margin, for the handwriting reader and the review queue."""
-        ok, buf = cv2.imencode(".png", self.crop(*L.answer_box(slot), pad=6))
+        ok, buf = cv2.imencode(".png", self.crop(*L.answer_box(slot, self.slots), pad=6))
         return buf.tobytes()
 
 
