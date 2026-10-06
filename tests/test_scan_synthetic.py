@@ -9,10 +9,13 @@ Set ANTHROPIC_API_KEY to also run test_live_transcription against the real API.
 import json
 import os
 
+import cv2
+import numpy as np
+import pypdfium2 as pdfium
 import pytest
 from PIL import Image
 
-from hs import accounts, config, db, grade, jobs, levels, layout as L, packets, planner, read, render, vault
+from hs import accounts, config, db, grade, jobs, levels, layout as L, packets, planner, read, render, scan, vault
 from synthetic import fill_in, layout_of, phone_scan, to_pdf
 
 DATE, NEXT = "2026-10-05", "2026-10-06"
@@ -175,3 +178,26 @@ def test_packets_keep_the_layout_they_were_printed_with(con, family):
     report, complete = grade.grade_scan(con, fid, scan_pdf, reader_for(probs, {n: p["answer"] for n, p in probs.items()}))
     assert complete, report
     assert all(r["correct"] for r in db.results(con, ws_id))
+
+
+def test_circles_on_a_curled_page_still_read_right(con, family):
+    """Paper curl can leave part of a photo off even after the page is straightened: in a real
+    photo the top circles were 15 pixels low and 8 to the left. An empty circle there must
+    still read as empty, and a ticked one as ticked."""
+    fid, kids = family
+    ws_id = packets.make(con, kids["hannah"], DATE)
+    packet = vault.get(con, fid, packets.packet_name(ws_id))
+    slots, top = layout_of(con, ws_id)[1]
+    s = config.settings()["scan_dpi"] / 72
+    img = np.array(fill_in(packet, {}, {(1, 1, "easy"): 0.5}, dpi=s * 72, layout=layout_of(con, ws_id))[0])
+    # The strip holding the first problem's circles lands 15 pixels lower and 8 to the left.
+    y0 = int((L.bubble(1, "stuck", slots, top)[1] - 20) * s)
+    y1 = int((L.bubble(1, "easy", slots, top)[1] + 20) * s)
+    curled = img.copy()
+    curled[y0 + 15:y1 + 15, :-8] = img[y0:y1, 8:]
+    curled = cv2.GaussianBlur(curled, (3, 3), 0)
+    blank = np.array(pdfium.PdfDocument(packet)[0].render(scale=s, grayscale=True).to_pil().convert("L"))
+    page = scan.Page(curled, s, {"worksheet": ws_id, "page": 1}, float(np.percentile(curled, 90)),
+                     blank=blank, slots=slots, top=top)
+    assert page.bubble_fill(1, "stuck") < scan.BUBBLE_EMPTY
+    assert page.bubble_fill(1, "easy") >= scan.BUBBLE_MARKED

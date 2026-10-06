@@ -11,7 +11,8 @@ from hs import layout as L
 
 DICT = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 INK = 0.85             # a pixel is ink if darker than this fraction of the paper around it
-SEARCH = 10            # pixels: how far a patch may be off after straightening (paper curl)
+SEARCH = 24            # pixels: how far a patch may be off after straightening (paper curl;
+                       # a real photo of a curled page was 15 off)
 # Marks are measured as ink that isn't on the blank printed page, so a tick, a cross and a
 # filled circle all count. Tuned on real phone photos of light pencil: empty circles read
 # up to 0.007, ticks 0.029 and up; empty boxes 0.000, a single faint "1" 0.0035.
