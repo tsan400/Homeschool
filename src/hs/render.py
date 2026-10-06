@@ -26,8 +26,9 @@ def esc(text: str) -> str:
 
 
 def big(markup: str) -> str:
-    """Display-size math so fractions are full height: $1/2$ -> $display(1/2)$."""
-    return re.sub(r"(?<!\\)\$([^$]+?)(?<!\\)\$", r"$display(\1)$", markup)
+    """Display-size math so fractions are full height, kept on one line:
+    $1/2$ -> #box[$display(1/2)$]."""
+    return re.sub(r"(?<!\\)\$([^$]+?)(?<!\\)\$", r"#box[$display(\1)$]", markup)
 
 
 def at(x, y, body: str) -> str:
