@@ -5,6 +5,7 @@ coordinates once, with OpenStreetMap's Nominatim, when they save it on the Famil
 either service can't be reached the packet is printed without the weather, never held up.
 """
 
+import re
 import time
 from collections import Counter
 from datetime import datetime
@@ -55,9 +56,11 @@ def _get(client: httpx.Client | None, url: str, **kw) -> httpx.Response:
 def locate(query: str, client: httpx.Client | None = None) -> dict:
     """'Concord, MA' or '01742' -> {place, lat, lon, units}. Coordinates are rounded to about a
     kilometre: plenty for a forecast, and no more precise than it needs to be."""
+    params = {"q": query, "format": "jsonv2", "limit": 1, "addressdetails": 1}
+    if re.fullmatch(r"\d{5}(-\d{4})?", query.strip()):
+        params["countrycodes"] = "us"  # a bare five-digit number is a ZIP code, not a postcode abroad
     try:
-        hits = _get(client, GEOCODE, params={"q": query, "format": "jsonv2", "limit": 1, "addressdetails": 1},
-                    headers={"User-Agent": AGENT}).json()
+        hits = _get(client, GEOCODE, params=params, headers={"User-Agent": AGENT}).json()
     except (httpx.HTTPError, ValueError) as e:
         raise WeatherError(f"couldn't look up that place right now ({e.__class__.__name__})") from e
     if not hits:

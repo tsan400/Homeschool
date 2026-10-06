@@ -2,6 +2,7 @@
 
 import json
 
+import httpx
 import pytest
 
 from hs import accounts, db, jobs, layout as L, packets, planner, readings, vault, weather, words
@@ -155,7 +156,7 @@ def test_french_circle_and_narration_page_are_read_from_a_scan(con, ao_kid):
     a = db.assignments(con, ws_id)
     assert a["french"]["done"] == 1, report
     assert a["history"]["done"] == 1
-    assert "French Pimsleur French 1, lesson 1: done" in report
+    assert "French Coffee Break French, Season 1, lesson 1: done" in report
 
 
 def test_an_unmarked_circle_and_blank_narration_page_count_for_nothing(con, ao_kid):
@@ -168,3 +169,17 @@ def test_an_unmarked_circle_and_blank_narration_page_count_for_nothing(con, ao_k
     a = db.assignments(con, ws_id)
     assert a["french"]["done"] == 0 and a["french"]["fill"] < 0.012
     assert a["science"]["done"] is None   # maybe narrated out loud: the parent ticks it on the day page
+
+
+def test_a_zip_code_is_looked_up_in_the_us():
+    sent = []
+
+    class Fake:
+        def get(self, url, params=None, headers=None):
+            sent.append(params)
+            return httpx.Response(200, json=[{"lat": "43.0594", "lon": "-71.4478", "display_name": "03106, Hooksett, NH",
+                                              "address": {"town": "Hooksett", "state": "New Hampshire", "country_code": "us"}}],
+                                  request=httpx.Request("GET", url))
+    assert weather.locate("03106", Fake()) == {"place": "Hooksett, New Hampshire", "lat": 43.06, "lon": -71.45, "units": "fahrenheit"}
+    weather.locate("Concord, MA", Fake())
+    assert sent[0]["countrycodes"] == "us" and "countrycodes" not in sent[1]
