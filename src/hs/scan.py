@@ -33,6 +33,7 @@ class Page:
     paper: float        # brightness of blank paper
     blank: np.ndarray | None = None  # the same page as printed, rendered at the same scale
     slots: int = L.LEGACY_SLOTS      # problems on this page, from the packet's layout
+    top: float = L.BODY_TOP          # where they start (lower on page 1, under the word and weather)
     _paper_map: np.ndarray | None = None
 
     def paper_map(self) -> np.ndarray:
@@ -63,7 +64,7 @@ class Page:
         return (around[at] < paper[at] * INK) & ~mask
 
     def bubble_fill(self, slot: int, which: str) -> float:
-        return self.mark_fill(*L.bubble(slot, which, self.slots))
+        return self.mark_fill(*L.bubble(slot, which, self.slots, self.top))
 
     def mark_fill(self, cx: float, cy: float, r: float) -> float:
         """Share of the area around a printed circle covered by the child's ink."""
@@ -77,7 +78,7 @@ class Page:
     def answer_ink(self, slot: int) -> float:
         """Share of the box's inside covered by the child's ink. The border itself is left out:
         on a curled page it never lines up exactly and would look like writing."""
-        x, y, w, h = L.answer_box(slot, self.slots)
+        x, y, w, h = L.answer_box(slot, self.slots, self.top)
         added = self.added_ink(x - 4, y - 4, w + 8, h + 8)
         k = self.px(8)
         return float(added[k:-k, k:-k].mean())
@@ -89,7 +90,7 @@ class Page:
 
     def answer_png(self, slot: int) -> bytes:
         """The answer box plus a small margin, for the handwriting reader and the review queue."""
-        ok, buf = cv2.imencode(".png", self.crop(*L.answer_box(slot, self.slots), pad=6))
+        ok, buf = cv2.imencode(".png", self.crop(*L.answer_box(slot, self.slots, self.top), pad=6))
         return buf.tobytes()
 
 

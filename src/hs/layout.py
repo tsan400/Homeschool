@@ -4,8 +4,6 @@ The renderer places everything at these coordinates and the scanner crops at
 the same coordinates, so the two can't drift apart.
 """
 
-import math
-
 PAGE_W, PAGE_H = 612, 792
 
 # ArUco markers (4x4 dictionary, ids 0-3) in the corners, used to straighten scans.
@@ -22,38 +20,48 @@ BUBBLE_X, BUBBLE_R = 532, 9
 BUBBLE_DY = {"stuck": 32, "easy": 70}
 
 
-FRENCH = (80, 750, 9)  # cx, cy, r: "did my French lesson" circle, bottom of page 1
+FRENCH = (80, 750, 9)          # cx, cy, r: "did my French lesson" circle, bottom of page 1
+FRENCH_QR = (104, 728, 44)     # x, y, size: opens the day's French lesson on a phone
 
-TODAY_H = 186           # weather and word of the day, at the top of page 1's body
+# Page 1 opens with the word of the day on the left and the weather on the right, tucked
+# under the QR code. Its problems start below them, a little closer together.
+WORD = (40, 82, 380, 104)       # x, y, w, h
+WEATHER = (440, 102, 132, 84)   # x, y, w, h
+FIRST_TOP = max(WORD[1] + WORD[3], WEATHER[1] + WEATHER[3]) + 10
 
 NARRATION_TOP, LINE_GAP = 200, 30  # writing lines on a narration page
 
 
-def slot_h(slots: int) -> float:
-    return (BODY_BOTTOM - BODY_TOP) / slots
+def slot_h(slots: int, top: float = BODY_TOP) -> float:
+    return (BODY_BOTTOM - top) / slots
 
 
-def today_slots(slots: int) -> int:
-    """How many problem slots the page-1 weather and word panel takes up."""
-    return math.ceil((TODAY_H + 8) / slot_h(slots))
+def slots_below(top: float, per: int) -> int:
+    """How many problems fit between `top` and the bottom of the page at nearly the usual spacing."""
+    return max(0, int((BODY_BOTTOM - top) // (slot_h(per) * 0.95)))
 
 
-def slot_top(slot: int, slots: int) -> float:
-    """Top of a problem's band. `slots` is problems per page, stored with each packet page so a
-    packet always scans with the layout it was printed with."""
-    if slots * (ANSWER_DY + ANSWER_H + 6) > BODY_BOTTOM - BODY_TOP:
+def first_page_slots(per: int) -> int:
+    """Problems on page 1, below the word and weather."""
+    return max(1, slots_below(FIRST_TOP, per))
+
+
+def slot_top(slot: int, slots: int, top: float = BODY_TOP) -> float:
+    """Top of a problem's band. `slots` (problems on the page) and `top` (where they start) are
+    stored with each packet page, so a packet always scans with the layout it was printed with."""
+    if slots * (ANSWER_DY + ANSWER_H + 6) > BODY_BOTTOM - top:
         raise ValueError(f"{slots} problems per page don't fit")
-    return BODY_TOP + (slot - 1) * slot_h(slots)
+    return top + (slot - 1) * slot_h(slots, top)
 
 
-def answer_box(slot: int, slots: int) -> tuple[float, float, float, float]:
+def answer_box(slot: int, slots: int, top: float = BODY_TOP) -> tuple[float, float, float, float]:
     """x, y, w, h of the answer box."""
-    return ANSWER_X, slot_top(slot, slots) + ANSWER_DY, ANSWER_W, ANSWER_H
+    return ANSWER_X, slot_top(slot, slots, top) + ANSWER_DY, ANSWER_W, ANSWER_H
 
 
-def bubble(slot: int, which: str, slots: int) -> tuple[float, float, float]:
+def bubble(slot: int, which: str, slots: int, top: float = BODY_TOP) -> tuple[float, float, float]:
     """cx, cy, r of a margin bubble ('stuck' or 'easy')."""
-    return BUBBLE_X, slot_top(slot, slots) + BUBBLE_DY[which], BUBBLE_R
+    return BUBBLE_X, slot_top(slot, slots, top) + BUBBLE_DY[which], BUBBLE_R
 
 
 def marker_corners(marker_id: int) -> list[tuple[float, float]]:

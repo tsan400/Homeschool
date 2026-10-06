@@ -1,0 +1,45 @@
+# Coffee Break French, Season 1: a free podcast by Coffee Break Languages (coffeebreakfrench.com).
+# Lesson titles and episode pages from the podcast feed (feeds.acast.com/public/shows/coffeebreakfrench).
+# The packet prints the lesson's title and a QR code that opens its episode page.
+program: Coffee Break French, Season 1
+lessons:
+  - ["How are you?", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson01-coffeebreakfrench"]   # 1
+  - ["Greetings", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson02-coffeebreakfrench"]   # 2
+  - ["Saying where you are from", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson03-coffeebreakfrench"]   # 3
+  - ["Talking about where you live", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson04-coffeebreakfrench"]   # 4
+  - ["Introducing family", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson05-coffeebreakfrench"]   # 5
+  - ["Numbers and more family", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson06-coffeebreakfrench"]   # 6
+  - ["Talking about your job", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson07-coffeebreakfrench"]   # 7
+  - ["Talking about likes and dislikes", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson08-coffeebreakfrench"]   # 8
+  - ["Talking about what you have learned so far", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson09-coffeebreakfrench"]   # 9
+  - ["Happy holidays", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson10-coffeebreakfrench"]   # 10
+  - ["Talking about language", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson11-coffeebreakfrench"]   # 11
+  - ["Numbers, days and dates", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson12-coffeebreakfrench"]   # 12
+  - ["Asking for directions", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson13-coffeebreakfrench"]   # 13
+  - ["Talking about your town", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson14-coffeebreakfrench"]   # 14
+  - ["Ordering drinks in a café", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson15-coffeebreakfrench"]   # 15
+  - ["Ordering snacks in a café", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson16-coffeebreakfrench"]   # 16
+  - ["Ordering food in a restaurant", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson17-coffeebreakfrench"]   # 17
+  - ["Restaurant situations", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson18-coffeebreakfrench"]   # 18
+  - ["Unit review", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson19-coffeebreakfrench"]   # 19
+  - ["End-of-unit special", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson20-coffeebreakfrench"]   # 20
+  - ["Talking about the weather", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson21-coffeebreakfrench"]   # 21
+  - ["Checking in to a hotel", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson22-coffeebreakfrench"]   # 22
+  - ["Problems with your stay at a hotel", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson23-coffeebreakfrench"]   # 23
+  - ["At the campsite", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson24-coffeebreakfrench"]   # 24
+  - ["Shopping", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson25-coffeebreakfrench"]   # 25
+  - ["Shopping at the deli", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson26-coffeebreakfrench"]   # 26
+  - ["Exchanging money", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson27-coffeebreakfrench"]   # 27
+  - ["Aches and pains", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson28-coffeebreakfrench"]   # 28
+  - ["More aches and complaints", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson29-coffeebreakfrench"]   # 29
+  - ["End-of-unit review", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson30-coffeebreakfrench"]   # 30
+  - ["Travelling to France", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson31-coffeebreakfrench"]   # 31
+  - ["Arrival in France", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson32-coffeebreakfrench"]   # 32
+  - ["Mix up at hotel check in", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson33-coffeebreakfrench"]   # 33
+  - ["Breakfast at the hotel", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson34-coffeebreakfrench"]   # 34
+  - ["At the tourist office", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson35-coffeebreakfrench"]   # 35
+  - ["Shopping in France", "https://shows.acast.com/coffeebreakfrench/episodes/cbf1.36-shoppinginfrance"]   # 36
+  - ["Travelling by public transport", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson37-coffeebreakfrench"]   # 37
+  - ["Seeking help at the pharmacy", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson38-coffeebreakfrench"]   # 38
+  - ["Language review in a party setting", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson39-coffeebreakfrench"]   # 39
+  - ["Linguistic diversity in France", "https://shows.acast.com/coffeebreakfrench/episodes/season1-lesson40-coffeebreakfrench"]   # 40

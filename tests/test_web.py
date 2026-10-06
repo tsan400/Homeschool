@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from hs import accounts, db, mail, packets, vault, web
-from synthetic import fill_in, phone_scan, to_pdf
+from synthetic import fill_in, layout_of, phone_scan, to_pdf
 from test_scan_synthetic import reader_for
 
 DAY = (date.today() - timedelta(days=3)).isoformat()   # in the past, so "not turned in"
@@ -73,7 +73,7 @@ def test_print_upload_calendar_scan_review_approve(con, portal):
     probs = {p["number"]: p for p in db.problems(con, ws_id)}
     written = {n: ("999" if n == 2 else p["answer"]) for n, p in probs.items()}
     answers = {(p["page"], p["slot"]): written[n] for n, p in probs.items()}
-    scan = to_pdf([phone_scan(img, i) for i, img in enumerate(fill_in(pdf.content, answers, {}))])
+    scan = to_pdf([phone_scan(img, i) for i, img in enumerate(fill_in(pdf.content, answers, {}, layout=layout_of(con, ws_id)))])
     state["reader"] = reader_for(probs, written)
     r = client.post("/uploads", files={"files": ("scan.pdf", scan, "application/pdf")})
     assert "graded" in r.text and f"{len(probs) - 1}/{len(probs)} correct" in r.text

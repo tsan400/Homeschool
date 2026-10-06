@@ -2,7 +2,7 @@
 
 import json
 
-from hs import config, db, layout as L, readings, weather, words
+from hs import config, db, layout as L, readings, render, weather, words
 from hs.generators.math import generate
 
 EXAMPLES_PER_PAGE = 3
@@ -58,11 +58,11 @@ def plan_test() -> list[dict]:
 
 
 def positions(n: int, per: int, first: int) -> list[tuple[int, int]]:
-    """(page offset, slot) for n problems, `per` to a page, the first page starting at slot `first`."""
-    out, page, slot = [], 0, first
+    """(page offset, slot) for n problems: `first` on the first page, then `per` to a page."""
+    out, page, slot, room = [], 0, 1, first
     for _ in range(n):
-        if slot > per:
-            page, slot = page + 1, 1
+        if slot > room:
+            page, slot, room = page + 1, 1, per
         out.append((page, slot))
         slot += 1
     return out
@@ -76,17 +76,27 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
     else:
         specs, sources = (plan_placement(con, student) if kind == "placement" else plan_test()), []
 
-    groups = [sources[:EXAMPLES_FIRST_PAGE]] + [sources[j:j + EXAMPLES_PER_PAGE]
-                                                for j in range(EXAMPLES_FIRST_PAGE, len(sources), EXAMPLES_PER_PAGE)]
-    pages = [{"page": i + 1, "kind": "examples", "sources": g} for i, g in enumerate(groups) if g]
-    first_problem_page = len(pages) + 1
     per = config.settings()["math"]["problems_per_page"]
-    # Page 1 opens with the weather and the word of the day, so its problems start lower down.
-    where = positions(len(specs), per, 1 + L.today_slots(per) if first_problem_page == 1 else 1)
+    # Page 1 opens with the word of the day and the weather, then any worked examples, then as
+    # many problems as fit below them.
+    pages, first_problem_page, first, top = [], 1, L.first_page_slots(per), L.FIRST_TOP
+    if sources:
+        top = L.FIRST_TOP + render.examples_height(con, sources) + 12
+        first = L.slots_below(top, per)
+        if not first:  # too many to share a page: the worked examples get pages of their own
+            groups = [sources[:EXAMPLES_FIRST_PAGE]] + [sources[j:j + EXAMPLES_PER_PAGE]
+                                                        for j in range(EXAMPLES_FIRST_PAGE, len(sources), EXAMPLES_PER_PAGE)]
+            pages = [{"page": i + 1, "kind": "examples", "sources": g} for i, g in enumerate(groups) if g]
+            first_problem_page, first, top = len(pages) + 1, per, L.BODY_TOP
+    where = positions(len(specs), per, first)
     n_pages = where[-1][0] + 1 if where else 0
     pages += [{"page": first_problem_page + i, "kind": "problems", "slots": per} for i in range(n_pages)]
     if pages:
         pages[0]["today"] = True
+        if pages[0]["kind"] == "problems":
+            pages[0].update(slots=first, top=top)
+            if sources:
+                pages[0]["examples"] = sources
 
     extras = readings.plan(con, st, date) if kind == "daily" else []
     reading = next((readings.text(x["item"]) for x in extras if x["subject"] != "french"), None)

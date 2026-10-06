@@ -12,8 +12,8 @@ import os
 import pytest
 from PIL import Image
 
-from hs import accounts, config, db, grade, jobs, levels, packets, planner, read, render, vault
-from synthetic import fill_in, phone_scan, to_pdf
+from hs import accounts, config, db, grade, jobs, levels, layout as L, packets, planner, read, render, vault
+from synthetic import fill_in, layout_of, phone_scan, to_pdf
 
 DATE, NEXT = "2026-10-05", "2026-10-06"
 
@@ -36,7 +36,7 @@ def scanned(con, family):
              (probs[7]["page"], probs[7]["slot"], "easy"): 0.5,     # a tick counts too
              (probs[6]["page"], probs[6]["slot"], "stuck"): 0.2}    # a stray dot is unclear
     packet = vault.get(con, fid, packets.packet_name(ws_id))
-    pages = [phone_scan(img, seed) for seed, img in enumerate(fill_in(packet, answers, marks))]
+    pages = [phone_scan(img, seed) for seed, img in enumerate(fill_in(packet, answers, marks, layout=layout_of(con, ws_id)))]
     pages = pages[::-1]                               # scanned in the wrong order
     pages[0] = pages[0].transpose(Image.ROTATE_180)   # and one page upside down
     return fid, ws_id, probs, written, to_pdf(pages)
@@ -96,7 +96,8 @@ def test_upload_grade_approve_and_scaffold(con, scanned):
     # Next day: problem 1 was marked stuck -> worked example page + two scaffolded variants.
     next_id = packets.make(con, ws["student"], NEXT)
     pages = json.loads(db.worksheet(con, next_id)["pages"])
-    assert pages[0] == {"page": 1, "kind": "examples", "sources": [probs[1]["id"]], "today": True}
+    assert pages[0]["kind"] == "problems" and pages[0]["examples"] == [probs[1]["id"]]   # worked example, then problems
+    assert pages[0]["top"] > L.FIRST_TOP + 60 and pages[0]["slots"] >= 2
     scaffolds = [p for p in db.problems(con, next_id) if p["kind"] == "scaffold"]
     assert len(scaffolds) == 2 and all(p["source_problem_id"] == probs[1]["id"] for p in scaffolds)
 
@@ -161,7 +162,8 @@ def test_packets_keep_the_layout_they_were_printed_with(con, family):
     ws_id = packets.make(con, kids["hannah"], DATE)
     pages = json.loads(db.worksheet(con, ws_id)["pages"])
     for pg in pages:
-        pg.pop("slots", None)                       # what an old packet row looks like
+        for key in ("slots", "top", "today"):       # what an old packet row looks like
+            pg.pop(key, None)
     con.execute("UPDATE worksheet SET pages=? WHERE id=?", (json.dumps(pages), ws_id))
     con.execute("UPDATE problem SET page = 1 + (number - 1) / 5, slot = 1 + (number - 1) % 5 WHERE worksheet_id=?", (ws_id,))
     con.commit()

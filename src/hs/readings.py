@@ -68,5 +68,20 @@ def plan(con, student, day: str) -> list[dict]:
     return out
 
 
+@cache
+def french_course() -> dict:
+    """The audio course named in settings (content/french/<course>.yaml): program and lessons."""
+    return yaml.safe_load((config.CONTENT / "french" / f"{config.settings()['french']['course']}.yaml").read_text())
+
+
+def lesson_info(item: str) -> dict:
+    """"lesson-3" -> {n, program, title, url}; title and url are None past the course's end."""
+    n = int(item.removeprefix("lesson-"))
+    course = french_course()
+    title, url = course["lessons"][n - 1] if n <= len(course["lessons"]) else (None, None)
+    return {"n": n, "program": course["program"], "title": title, "url": url}
+
+
 def french_label(item: str) -> str:
-    return f"{config.settings()['french']['program']}, lesson {item.removeprefix('lesson-')}"
+    f = lesson_info(item)
+    return f"{f['program']}, lesson {f['n']}" + (f": {f['title']}" if f["title"] else "")

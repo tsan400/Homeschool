@@ -1,6 +1,7 @@
 """Make a fake 'completed and phone-scanned' packet from a real rendered packet."""
 
 import io
+import json
 from pathlib import Path
 
 import cv2
@@ -21,9 +22,19 @@ def font(size):
     return ImageFont.load_default(size)
 
 
-def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150, slots=6, ticks=(), writing=None) -> list[Image.Image]:
+def layout_of(con, ws_id) -> dict:
+    """{page: (slots, top)}, the way the packet was printed."""
+    from hs import db
+    return {p["page"]: (p.get("slots", L.LEGACY_SLOTS), p.get("top", L.BODY_TOP))
+            for p in json.loads(db.worksheet(con, ws_id)["pages"])}
+
+
+def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150, slots=6, ticks=(), writing=None,
+            layout=None) -> list[Image.Image]:
     """packet: PDF bytes. answers: {(page, slot): text}; marks: {(page, slot, 'stuck'|'easy'): fill 0..1};
-    ticks: [(page, cx, cy)] checkmarks anywhere (the French circle); writing: {page: [lines]} on a narration page."""
+    ticks: [(page, cx, cy)] checkmarks anywhere (the French circle); writing: {page: [lines]} on a narration page.
+    layout: {page: (slots, top)} from layout_of(); pages not in it have `slots` problems from the usual top."""
+    where = lambda pg: (layout or {}).get(pg, (slots, L.BODY_TOP))
     s = dpi / 72
     pages = []
     for n, page in enumerate(pdfium.PdfDocument(packet), 1):
@@ -32,12 +43,12 @@ def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150, slots=6, ticks=(
         for (pg, slot), text in answers.items():
             if pg == n:
                 text, shade = text if isinstance(text, tuple) else (text, 70)  # (text, 200) = faint pencil
-                x, y, w, h = L.answer_box(slot, slots)
+                x, y, w, h = L.answer_box(slot, *where(pg))
                 d.text(((x + 10) * s, (y + 14) * s), text, fill=shade, font=font(int(18 * s)) if shade > 100 else font(int(26 * s)))
-                d.text(((64) * s, (L.slot_top(slot, slots) + 50) * s), "work...", fill=110, font=font(int(14 * s)))
+                d.text(((64) * s, (L.slot_top(slot, *where(pg)) + 50) * s), "work...", fill=110, font=font(int(14 * s)))
         for (pg, slot, which), amount in marks.items():
             if pg == n:
-                cx, cy, r = L.bubble(slot, which, slots)
+                cx, cy, r = L.bubble(slot, which, *where(pg))
                 if amount >= 1:
                     rr = r * 0.85
                     d.ellipse([(cx - rr) * s, (cy - rr) * s, (cx + rr) * s, (cy + rr) * s], fill=80)

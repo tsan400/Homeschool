@@ -94,11 +94,11 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
         meta, items = {}, []
         scanned_pages = set(json.loads(ws["scanned_pages"]))
         printed = pdfium.PdfDocument(vault.get(con, family_id, packets.packet_name(ws_id)))
-        layout = {pg["page"]: pg.get("slots", L.LEGACY_SLOTS) for pg in json.loads(ws["pages"])}
+        layout = {pg["page"]: (pg.get("slots", L.LEGACY_SLOTS), pg.get("top", L.BODY_TOP)) for pg in json.loads(ws["pages"])}
         extras = db.assignments(con, ws_id)
         for page in pages:
             n = page.qr["page"]
-            page.slots = layout.get(n, L.LEGACY_SLOTS)
+            page.slots, page.top = layout.get(n, (L.LEGACY_SLOTS, L.BODY_TOP))
             page.blank = np.array(printed[n - 1].render(scale=page.scale, grayscale=True).to_pil().convert("L"))
             vault.put(con, family_id, page_name(ws_id, n), page.jpeg())
             scanned_pages.add(n)
@@ -109,7 +109,7 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
                     fill = page.mark_fill(*L.FRENCH)
                     con.execute("UPDATE assignment SET done=?, fill=? WHERE worksheet_id=? AND subject=?",
                                 (int(fill >= scan.BUBBLE_MARKED), fill, ws_id, subject))
-                    report.append(f"French {readings.french_label(a['item'])}: " + (
+                    report.append(f"French, lesson {readings.lesson_info(a['item'])['n']}: " + (
                         "done" if fill >= scan.BUBBLE_MARKED else "unclear mark, check it" if fill > scan.BUBBLE_EMPTY else "not marked"))
                 elif page.writing() > scan.WRITTEN:  # a blank page may still mean it was told out loud
                     con.execute("UPDATE assignment SET done=1 WHERE worksheet_id=? AND subject=?", (ws_id, subject))

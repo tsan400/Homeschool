@@ -30,6 +30,6 @@ ao:                     # AmblesideOnline readings for children with an AO year 
     thu: science
 
 french:                 # the audio course; the packet names the next lesson, which moves on once marked done
-  program: Coffee Break French, Season 1   # free podcast, 40 beginner lessons (coffeebreakfrench.com)
+  course: coffee-break-french-1   # content/french/: Coffee Break French, Season 1, a free podcast
   # Other free choices: Language Transfer "Introduction to French" (free app), or Pimsleur
   # through a public library's Libby or Hoopla, where the library carries it.

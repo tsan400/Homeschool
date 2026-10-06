@@ -71,14 +71,35 @@ def test_word_of_the_day(con, ao_kid, family):
     assert extras(con, packets.make(con, hannah, WEEK[0]))["word"] == words.bands()["6-8"][0]["word"]
 
 
-def test_page_one_problems_start_below_the_panel(con, family):
+def test_page_one_problems_start_below_the_word_and_weather(con, family):
     fid, kids = family
     ws_id = packets.make(con, kids["hannah"], WEEK[0])
-    per = 6
-    first = [p for p in db.problems(con, ws_id) if p["page"] == 1]
-    assert [p["slot"] for p in first] == list(range(1 + L.today_slots(per), per + 1))
-    assert L.slot_top(first[0]["slot"], per) >= L.BODY_TOP + L.TODAY_H
-    assert planner.positions(5, 6, 3) == [(0, 3), (0, 4), (0, 5), (0, 6), (1, 1)]
+    page1 = json.loads(db.worksheet(con, ws_id)["pages"])[0]
+    n1 = L.first_page_slots(6)
+    assert n1 == 5 and page1 == {"page": 1, "kind": "problems", "slots": n1, "top": L.FIRST_TOP, "today": True}
+    assert [p["slot"] for p in db.problems(con, ws_id) if p["page"] == 1] == list(range(1, n1 + 1))
+    word_bottom = L.WORD[1] + L.WORD[3]
+    assert L.slot_top(1, n1, L.FIRST_TOP) > max(word_bottom, L.WEATHER[1] + L.WEATHER[3])
+    assert L.WEATHER[1] > L.QR[1] + L.QR[2]                         # tucked under the QR code
+    assert L.bubble(n1, "easy", n1, L.FIRST_TOP)[1] + 9 < L.BODY_BOTTOM
+    assert planner.positions(7, 6, 5) == [(0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2)]
+
+
+def test_every_word_fits_its_card():
+    import tempfile
+    from pathlib import Path
+    import pypdfium2 as pdfium
+    import typst
+    from hs import render
+    x, y, w, h = L.WORD
+    entries = [e | {"in_reading": True} for band in words.bands().values() for e in band]
+    cards = [f"#block(width: {w}pt, inset: (x: 14pt, y: 11pt))[{render.word_card(e)}]" for e in entries]
+    with tempfile.TemporaryDirectory() as d:
+        Path(d, "m.typ").write_text(f"#set page(width: {w}pt, height: auto, margin: 0pt)\n#set text(font: {render.FONTS})\n"
+                                    + "\n#pagebreak()\n".join(cards))
+        pdf = pdfium.PdfDocument(typst.compile(str(Path(d, "m.typ")), font_paths=[str(render.FONT_DIR)]))
+        too_tall = [(e["word"], round(pdf[i].get_size()[1])) for i, e in enumerate(entries) if pdf[i].get_size()[1] > h]
+    assert not too_tall
 
 
 def hourly(codes, probs, temps):
@@ -156,7 +177,7 @@ def test_french_circle_and_narration_page_are_read_from_a_scan(con, ao_kid):
     a = db.assignments(con, ws_id)
     assert a["french"]["done"] == 1, report
     assert a["history"]["done"] == 1
-    assert "French Coffee Break French, Season 1, lesson 1: done" in report
+    assert "French, lesson 1: done" in report
 
 
 def test_an_unmarked_circle_and_blank_narration_page_count_for_nothing(con, ao_kid):
@@ -183,3 +204,18 @@ def test_a_zip_code_is_looked_up_in_the_us():
     assert weather.locate("03106", Fake()) == {"place": "Hooksett, New Hampshire", "lat": 43.06, "lon": -71.45, "units": "fahrenheit"}
     weather.locate("Concord, MA", Fake())
     assert sent[0]["countrycodes"] == "us" and "countrycodes" not in sent[1]
+
+
+def test_the_french_qr_code_opens_the_lesson(con, ao_kid):
+    import numpy as np
+    import pypdfium2 as pdfium
+    import zxingcpp
+    from hs.scan import read_qr
+    fid, sid = ao_kid
+    ws_id = packets.make(con, sid, WEEK[0])
+    page = np.array(pdfium.PdfDocument(vault.get(con, fid, packets.packet_name(ws_id)))[0]
+                    .render(scale=200 / 72, grayscale=True).to_pil().convert("L"))
+    found = {r.text for r in zxingcpp.read_barcodes(page, formats=zxingcpp.BarcodeFormat.QRCode)}
+    lesson = readings.lesson_info("lesson-1")
+    assert lesson["title"] == "How are you?" and lesson["url"] in found
+    assert read_qr(page, 200 / 72) == {"worksheet": ws_id, "page": 1}   # the scanner still finds the page's own code

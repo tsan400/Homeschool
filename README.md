@@ -147,9 +147,9 @@ Next to it is the day's weather, if the family has set a town or ZIP on the Fami
 - **Pages.** Each page has corner markers and a QR code (worksheet and page). A math page has
   six problems, each with a boxed answer area and "stuck" and "too easy" circles. Pages can be
   scanned in any order and any orientation.
-- **Look.** Packets are black and white. Words are in Nunito, numbers in Fira Math and
-  readings in Literata. All three are bundled in `src/hs/fonts`, with their open font
-  licences. The QR codes are drawn with round dots and gently rounded corners. ZXing reads them
+- **Look.** Packets are black and white. Words are in Nunito, math in New Computer Modern
+  (built into Typst) and readings in Literata. Nunito and Literata are bundled in
+  `src/hs/fonts` with their open font licences. The QR codes are drawn with round dots and gently rounded corners. ZXing reads them
   first and OpenCV is the backup, and a test checks that both can.
 - **Reading.** The scan is straightened using the corner markers. The circles are read by
   measuring how dark they are. Each non-blank answer box is sent to Claude, which only
@@ -179,7 +179,7 @@ content/words.yaml     word of the day, by grade band
 src/hs/                web (portal), accounts, jobs (grading queue), packets, planner, generators,
                        render (Typst), scan, read (Claude), grade, levels, vault, mail,
                        readings (AO and French), words, weather
-src/hs/fonts/          Nunito, Literata, Fira Math (SIL Open Font License)
+src/hs/fonts/          Nunito and Literata (SIL Open Font License)
 src/hs/templates/      portal pages
 HS_HOME/hs.db          SQLite: families, children, levels, results (not in git)
 HS_HOME/files/<family>/   encrypted packets, keys, page images, crops, pending uploads
