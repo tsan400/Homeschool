@@ -21,3 +21,13 @@ math:
   active_skills: 3      # how many unmastered skills to work on at once
   min_per_skill: 4
   max_stuck_examples: 3 # worked examples per day for "stuck" problems
+
+ao:                     # AmblesideOnline readings for children with an AO year set (Family page)
+  days:                 # one reading a day; other days are math and French only
+    mon: history        # This Country of Ours, a chapter a week
+    tue: science        # Fabre's Story-Book of Science, two chapters a week
+    wed: nature         # Madam How and Lady Why
+    thu: science
+
+french:
+  program: Pimsleur French 1   # the audio course you use; the packet says which lesson is next

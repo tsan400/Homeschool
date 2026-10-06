@@ -32,6 +32,23 @@
     {% endif %}
   </div>
 
+  {% set x = sh.extras %}
+  {% if x.word or x.weather or x.reading or x.french %}
+  <div class="extras">
+    {% if x.word %}<div><div class="label">Word of the day</div><strong>{{ x.word.word }}</strong> <em class="muted">{{ x.word.pos }}</em>
+      <div>{{ x.word.meaning }}</div><div class="muted"><em>“{{ x.word.sentence }}”</em></div></div>{% endif %}
+    {% if x.weather %}<div><div class="label">Weather</div>{{ x.weather.sky }}, high {{ x.weather.high }}°, low {{ x.weather.low }}°
+      <div class="muted">{{ x.weather.notes|join(' ') }}</div></div>{% endif %}
+    {% if x.reading %}<div><div class="label">{{ x.reading.subject }}</div>{{ x.reading.book }}, {{ x.reading.title }}
+      <div class="muted">AO week {{ x.reading.week }} ·
+        {% if x.reading.scanned %}<a href="/ws/{{ ws.id }}/page-{{ x.reading.page }}.jpg" target="_blank">narration page</a>
+        {% else %}narration page not scanned (told out loud is fine){% endif %}</div></div>{% endif %}
+    {% if x.french %}<div><div class="label">French</div>{{ x.french.label }}
+      <div class="muted">{% if x.french.unclear %}unclear mark: tick it below if it was done{% elif x.french.done %}marked done
+        {% elif x.french.done == 0 %}not marked{% else %}not scanned yet{% endif %}</div></div>{% endif %}
+  </div>
+  {% endif %}
+
   {% if sh.pages %}
     <h3>Scanned pages</h3>
     <div class="pages">
@@ -73,6 +90,14 @@
     {% endfor %}
   </table>
   </div>
+  {% if x.reading or x.french %}
+  <div class="row" style="margin-top:10px">
+    {% if x.reading %}<label><input type="checkbox" name="done_{{ x.reading.key }}" {{ 'checked' if x.reading.done }} {{ 'disabled' if ws.status == 'approved' }}>
+      {{ x.reading.subject }} narrated (out loud or written)</label>{% endif %}
+    {% if x.french %}<label><input type="checkbox" name="done_french" {{ 'checked' if x.french.done }} {{ 'disabled' if ws.status == 'approved' }}>
+      French lesson done</label>{% endif %}
+  </div>
+  {% endif %}
   {% if ws.status != 'approved' %}
     <p class="muted">Fix anything misread. Changing "Read as" re-grades the answer. "Skip" leaves a problem out of the score.
       Levels change only when you approve.</p>

@@ -6,12 +6,17 @@
 <h2>Children</h2>
 <div class="card scroll">
   <table>
-    <tr><th>Name</th><th>Grade</th><th>Math started at</th><th></th></tr>
+    <tr><th>Name</th><th>Grade</th><th>Math started at</th><th>History and science</th><th>French</th><th></th></tr>
     {% for k in kids %}
       <tr>
         <td><input form="kid-{{ k.id }}" name="name" value="{{ k.name }}" required maxlength="40" aria-label="name"></td>
         <td><input form="kid-{{ k.id }}" name="grade" type="number" min="0" max="12" value="{{ k.grade }}" style="width:5em" aria-label="grade"></td>
         <td>grade {{ k.math_grade }}</td>
+        <td><select form="kid-{{ k.id }}" name="ao" aria-label="history and science">
+          <option value="">Math only</option>
+          {% for y in ao_years %}<option value="{{ y }}" {{ 'selected' if k.ao_year == y }}>AmblesideOnline Year {{ y }}</option>{% endfor %}
+        </select></td>
+        <td><input form="kid-{{ k.id }}" type="checkbox" name="french" value="true" {{ 'checked' if k.french }} aria-label="French"></td>
         <td><form id="kid-{{ k.id }}" method="post" action="/students/{{ k.id }}"><button class="ghost">Save</button> <a href="/students/{{ k.id }}">Open</a></form></td>
       </tr>
     {% endfor %}
@@ -21,17 +26,24 @@
     <input name="name" placeholder="First name" required maxlength="40">
     <label>Grade <input name="grade" type="number" min="0" max="12" required style="width:5em"></label>
     <label>Math grade <input name="math_grade" type="number" min="0" max="12" required style="width:5em"></label>
+    <select name="ao" aria-label="history and science"><option value="">Math only</option>
+      {% for y in ao_years %}<option value="{{ y }}">AmblesideOnline Year {{ y }}</option>{% endfor %}</select>
+    <label><input type="checkbox" name="french" value="true"> French</label>
     <button>Add</button>
   </form>
   <p class="muted">Use 0 for kindergarten. Math grade is where math starts if your child is ahead or behind: skills below it start as mastered.
-    A placement packet then fine-tunes it.</p>
+    A placement packet then fine-tunes it. With an AmblesideOnline year, packets add that year's history and science readings
+    in order (history Monday, science Tuesday and Thursday, nature lore Wednesday), each with a narration page.
+    French adds a daily audio lesson with a checkbox on page 1.</p>
 </div>
 
 <h2>Settings</h2>
 <div class="card">
+  <p class="muted" style="margin-top:0">Page 1 of each packet shows the day's weather for your town (from Open-Meteo), when you set one.</p>
   <form method="post" action="/family" class="row">
     <label>Family name <input name="name" value="{{ parent.family_name }}" required maxlength="80"></label>
     <label>Time zone <select name="tz">{% for z in zones %}<option {{ 'selected' if z == parent.tz }}>{{ z }}</option>{% endfor %}</select></label>
+    <label>Town or ZIP for the weather <input name="place" value="{{ parent.place or '' }}" placeholder="e.g. Concord, MA" maxlength="100"></label>
     <button class="ghost">Save</button>
   </form>
 </div>

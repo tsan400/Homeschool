@@ -93,10 +93,12 @@ def recent_links(con, email: str, minutes: int = 10) -> int:
                        (normalize(email), since)).fetchone()[0]
 
 
-def add_student(con, family_id: int, name: str, grade: int, math_grade: int) -> str:
+def add_student(con, family_id: int, name: str, grade: int, math_grade: int,
+                ao_year: int | None = None, french: bool = False) -> str:
     slug = re.sub(r"[^a-z0-9]+", "", name.lower())[:16] or "child"
     sid = f"{slug}-{secrets.token_hex(2)}"
-    con.execute("INSERT INTO student VALUES (?,?,?,?,?,?)", (sid, family_id, name.strip(), grade, math_grade, now()))
+    con.execute("""INSERT INTO student (id, family_id, name, grade, math_grade, created_at, ao_year, french)
+                   VALUES (?,?,?,?,?,?,?,?)""", (sid, family_id, name.strip(), grade, math_grade, now(), ao_year, int(french)))
     levels.seed(con, db.student(con, sid))
     return sid
 

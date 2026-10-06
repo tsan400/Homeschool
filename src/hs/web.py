@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from hs import accounts, config, db, grade, jobs, levels, mail, packets, read, vault
+from hs import accounts, config, db, grade, jobs, levels, mail, packets, read, readings, scan, vault, weather, words
 
 TEMPLATES = Jinja2Templates(directory=Path(__file__).parent / "templates")
 KINDS = {"daily": "Daily packet", "placement": "Placement", "test": "Practice page"}
@@ -143,7 +143,7 @@ def create_app(transcribe=read.transcribe, background: bool = True) -> FastAPI:
 
     def me(request: Request, con=Depends(get_con)):
         pid = request.session.get("parent")
-        row = pid and con.execute("""SELECT p.id, p.email, p.family_id, f.name AS family_name, f.tz
+        row = pid and con.execute("""SELECT p.id, p.email, p.family_id, f.name AS family_name, f.tz, f.place
                                      FROM parent p JOIN family f ON f.id = p.family_id WHERE p.id=?""", (pid,)).fetchone()
         if not row:
             request.session.clear()
@@ -255,13 +255,29 @@ def create_app(transcribe=read.transcribe, background: bool = True) -> FastAPI:
         for ws in con.execute("SELECT * FROM worksheet WHERE student=? AND date=? ORDER BY kind != 'daily'", (sid, day)):
             rows = db.results(con, ws["id"])
             sheets.append({"ws": ws, "kind": KINDS[ws["kind"]], "rows": rows, "score": score(rows),
-                           "pages": json.loads(ws["scanned_pages"]),
+                           "pages": json.loads(ws["scanned_pages"]), "extras": extras_view(con, ws),
                            "skill": {r["skill"]: config.skill(r["skill"])["name"] for r in rows},
                            "missing": [r["number"] for r in rows if not r["scanned"]]})
         pending = con.execute("SELECT COUNT(*) FROM worksheet WHERE student=? AND status IN ('graded','partial') AND date < ?",
                               (sid, day)).fetchone()[0]
         return page(request, "day.html", parent=parent, s=s, d=d, day=day, sheets=sheets, plain=plain,
                     pending=pending, today=today(parent))
+
+    def extras_view(con, ws) -> dict:
+        """The word, the weather, the reading and French for a packet, for the day page."""
+        out = {"weather": json.loads(ws["weather"]) if ws["weather"] else None, "word": None, "reading": None, "french": None}
+        scanned = set(json.loads(ws["scanned_pages"]))
+        for subject, a in db.assignments(con, ws["id"]).items():
+            if subject == "word":
+                out["word"] = words.entry(a["item"])
+            elif subject == "french":
+                unclear = a["fill"] is not None and scan.BUBBLE_EMPTY < a["fill"] < scan.BUBBLE_MARKED
+                out["french"] = {"label": readings.french_label(a["item"]), "done": a["done"], "unclear": unclear}
+            else:
+                r = readings.reading(a["item"])
+                out["reading"] = {"subject": readings.SUBJECTS[subject], "key": subject, "book": r["book"], "title": r["title"],
+                                  "week": r["week"], "page": a["page"], "scanned": a["page"] in scanned, "done": a["done"]}
+        return out
 
     @app.post("/students/{sid}/{day}/packet")
     def make_packet(sid: str, day: str, kind: str = Form("daily"), fresh: bool = Form(False),
@@ -327,6 +343,10 @@ def create_app(transcribe=read.transcribe, background: bool = True) -> FastAPI:
             con.execute("""UPDATE response SET transcription=?, blank=?, correct=?, stuck=?, too_easy=?, excluded=?,
                            reviewed=1, confidence=CASE WHEN transcription=? THEN confidence ELSE 1.0 END WHERE problem_id=?""",
                         (text, int(not text), int(correct), int(f"s{pid}" in form), int(f"e{pid}" in form), excluded, text, pid))
+        for subject in db.assignments(con, ws_id):
+            if subject != "word":  # French lesson done; reading narrated (out loud counts)
+                con.execute("UPDATE assignment SET done=? WHERE worksheet_id=? AND subject=?",
+                            (int(f"done_{subject}" in form), ws_id, subject))
         con.commit()
         s = db.student(con, ws["student"])
         url = f"/students/{s['id']}/{ws['date']}"
@@ -378,16 +398,28 @@ def create_app(transcribe=read.transcribe, background: bool = True) -> FastAPI:
     @app.get("/family", response_class=HTMLResponse)
     def family_page(request: Request, con=Depends(get_con), parent=Depends(me)):
         fid = parent["family_id"]
-        return page(request, "family.html", parent=parent, kids=db.students(con, fid),
+        return page(request, "family.html", parent=parent, kids=db.students(con, fid), ao_years=readings.years(),
                     parents=con.execute("SELECT * FROM parent WHERE family_id=?", (fid,)).fetchall(),
                     invites=con.execute("SELECT * FROM invite WHERE family_id=?", (fid,)).fetchall(),
                     zones=sorted(z for z in available_timezones() if "/" in z and not z.startswith("Etc")))
 
     @app.post("/family")
-    def family_save(name: str = Form(...), tz: str = Form(...), con=Depends(get_con), parent=Depends(me)):
+    def family_save(request: Request, name: str = Form(...), tz: str = Form(...), place: str = Form(""),
+                    con=Depends(get_con), parent=Depends(me)):
         if tz not in available_timezones():
             raise HTTPException(400, "Unknown time zone")
         con.execute("UPDATE family SET name=?, tz=? WHERE id=?", (name.strip()[:80], tz, parent["family_id"]))
+        place = place.strip()[:100]
+        if not place:
+            con.execute("UPDATE family SET place=NULL, lat=NULL, lon=NULL, units=NULL WHERE id=?", (parent["family_id"],))
+        elif place != parent["place"]:
+            try:
+                found = weather.locate(place)
+                con.execute("UPDATE family SET place=?, lat=?, lon=?, units=? WHERE id=?",
+                            (found["place"], found["lat"], found["lon"], found["units"], parent["family_id"]))
+                request.session["flash"] = f"Weather on packets will be for {found['place']}."
+            except weather.WeatherError as e:
+                request.session["flash"] = f"Weather not changed: {e}."
         con.commit()
         return back("/family")
 
@@ -405,21 +437,29 @@ def create_app(transcribe=read.transcribe, background: bool = True) -> FastAPI:
                   f"Sign in with this email address at {config.base_url()}/signin")
         return back("/family")
 
+    def ao_year(value: str) -> int | None:
+        if not value:
+            return None
+        if not value.isdigit() or int(value) not in readings.years():
+            raise HTTPException(400, "Unknown AmblesideOnline year")
+        return int(value)
+
     @app.post("/students")
     def student_add(name: str = Form(...), grade_: int = Form(..., alias="grade"), math_grade: int = Form(...),
-                    con=Depends(get_con), parent=Depends(me)):
+                    ao: str = Form(""), french: bool = Form(False), con=Depends(get_con), parent=Depends(me)):
         if not name.strip() or not (0 <= grade_ <= 12 and 0 <= math_grade <= 12):
             raise HTTPException(400, "Name and grades 0-12 are required")
-        sid = accounts.add_student(con, parent["family_id"], name[:40], grade_, math_grade)
+        sid = accounts.add_student(con, parent["family_id"], name[:40], grade_, math_grade, ao_year(ao), french)
         return back(f"/students/{sid}")
 
     @app.post("/students/{sid}")
     def student_edit(sid: str, name: str = Form(...), grade_: int = Form(..., alias="grade"),
-                     con=Depends(get_con), parent=Depends(me)):
+                     ao: str = Form(""), french: bool = Form(False), con=Depends(get_con), parent=Depends(me)):
         own_student(con, parent, sid)
         if not name.strip() or not 0 <= grade_ <= 12:
             raise HTTPException(400, "Name and a grade 0-12 are required")
-        con.execute("UPDATE student SET name=?, grade=? WHERE id=?", (name.strip()[:40], grade_, sid))
+        con.execute("UPDATE student SET name=?, grade=?, ao_year=?, french=? WHERE id=?",
+                    (name.strip()[:40], grade_, ao_year(ao), int(french), sid))
         con.commit()
         return back("/family")
 

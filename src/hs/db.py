@@ -8,7 +8,8 @@ from hs import config
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS family (
     id INTEGER PRIMARY KEY, name TEXT, key_wrapped BLOB NOT NULL, created_at TEXT,
-    tz TEXT NOT NULL DEFAULT 'America/New_York');   -- "today" for printing and the calendar
+    tz TEXT NOT NULL DEFAULT 'America/New_York',    -- "today" for printing and the calendar
+    place TEXT, lat REAL, lon REAL, units TEXT);    -- for the weather on packets; lat/lon rounded
 
 CREATE TABLE IF NOT EXISTS parent (
     id INTEGER PRIMARY KEY, family_id INTEGER NOT NULL REFERENCES family(id) ON DELETE CASCADE,
@@ -23,7 +24,9 @@ CREATE TABLE IF NOT EXISTS login_token (
 CREATE TABLE IF NOT EXISTS student (
     id TEXT PRIMARY KEY,        -- e.g. "timothy-k3x9": unique across families, printed in QR codes
     family_id INTEGER NOT NULL REFERENCES family(id) ON DELETE CASCADE,
-    name TEXT, grade INTEGER, math_grade INTEGER, created_at TEXT);
+    name TEXT, grade INTEGER, math_grade INTEGER, created_at TEXT,
+    ao_year INTEGER,            -- AmblesideOnline year for history and science readings; NULL = math only
+    french INTEGER NOT NULL DEFAULT 0);
 
 CREATE TABLE IF NOT EXISTS upload (
     id INTEGER PRIMARY KEY, family_id INTEGER NOT NULL REFERENCES family(id) ON DELETE CASCADE,
@@ -41,7 +44,8 @@ CREATE TABLE IF NOT EXISTS worksheet (
     kind TEXT,                  -- daily | placement | test
     status TEXT,                -- printed | partial | graded | approved
     pages TEXT,                 -- JSON list of {"page": n, "kind": "problems"|"examples"}
-    scanned_pages TEXT NOT NULL DEFAULT '[]');  -- pages with a saved scan image
+    scanned_pages TEXT NOT NULL DEFAULT '[]',   -- pages with a saved scan image
+    weather TEXT);              -- JSON forecast printed on page 1, if there was one
 
 CREATE TABLE IF NOT EXISTS problem (
     id INTEGER PRIMARY KEY, worksheet_id TEXT REFERENCES worksheet(id) ON DELETE CASCADE,
@@ -58,6 +62,15 @@ CREATE TABLE IF NOT EXISTS response (
     reviewed INTEGER NOT NULL DEFAULT 0, excluded INTEGER NOT NULL DEFAULT 0,
     scaffolded INTEGER NOT NULL DEFAULT 0, crop TEXT);  -- crop: vault file name
 
+CREATE TABLE IF NOT EXISTS assignment (     -- the non-math parts of a daily packet
+    worksheet_id TEXT REFERENCES worksheet(id) ON DELETE CASCADE,
+    subject TEXT,               -- history | science | nature | french | word
+    item TEXT,                  -- reading id (content/ao), "lesson-N" for French, or the word of the day
+    page INTEGER,               -- the narration page, or the page with the French checkbox
+    done INTEGER,               -- narrated / lesson done; NULL = not known yet
+    fill REAL,                  -- French checkbox: share of the circle marked
+    PRIMARY KEY (worksheet_id, subject));
+
 CREATE TABLE IF NOT EXISTS session (
     student TEXT REFERENCES student(id) ON DELETE CASCADE, skill TEXT, date TEXT, worksheet_id TEXT,
     n INTEGER, n_correct INTEGER, n_too_easy INTEGER, level_before INTEGER, level_after INTEGER,
@@ -73,7 +86,25 @@ def connect() -> sqlite3.Connection:
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA foreign_keys=ON")
     con.executescript(SCHEMA)
+    migrate(con)
     return con
+
+
+# Columns added after a table was first created: (table, column, definition).
+ADDED = [("student", "ao_year", "INTEGER"), ("student", "french", "INTEGER NOT NULL DEFAULT 0"),
+         ("family", "place", "TEXT"), ("family", "lat", "REAL"), ("family", "lon", "REAL"), ("family", "units", "TEXT"),
+         ("worksheet", "weather", "TEXT")]
+
+
+def migrate(con):
+    for table, col, definition in ADDED:
+        if col not in {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}:
+            con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {definition}")
+    con.commit()
+
+
+def family(con, fid):
+    return con.execute("SELECT * FROM family WHERE id=?", (fid,)).fetchone()
 
 
 def student(con, sid):
@@ -113,6 +144,10 @@ def results(con, ws_id):
             r.problem_id IS NOT NULL AS scanned
         FROM problem p LEFT JOIN response r ON r.problem_id = p.id
         WHERE p.worksheet_id=? ORDER BY p.number""", (ws_id,)).fetchall()
+
+
+def assignments(con, ws_id) -> dict[str, sqlite3.Row]:
+    return {r["subject"]: r for r in con.execute("SELECT * FROM assignment WHERE worksheet_id=?", (ws_id,))}
 
 
 def steps(row) -> list[str]:

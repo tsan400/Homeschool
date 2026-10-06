@@ -96,7 +96,7 @@ def test_upload_grade_approve_and_scaffold(con, scanned):
     # Next day: problem 1 was marked stuck -> worked example page + two scaffolded variants.
     next_id = packets.make(con, ws["student"], NEXT)
     pages = json.loads(db.worksheet(con, next_id)["pages"])
-    assert pages[0] == {"page": 1, "kind": "examples", "sources": [probs[1]["id"]]}
+    assert pages[0] == {"page": 1, "kind": "examples", "sources": [probs[1]["id"]], "today": True}
     scaffolds = [p for p in db.problems(con, next_id) if p["kind"] == "scaffold"]
     assert len(scaffolds) == 2 and all(p["source_problem_id"] == probs[1]["id"] for p in scaffolds)
 

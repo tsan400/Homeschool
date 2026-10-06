@@ -21,8 +21,9 @@ def font(size):
     return ImageFont.load_default(size)
 
 
-def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150, slots=6) -> list[Image.Image]:
-    """packet: PDF bytes. answers: {(page, slot): text}; marks: {(page, slot, 'stuck'|'easy'): fill 0..1}."""
+def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150, slots=6, ticks=(), writing=None) -> list[Image.Image]:
+    """packet: PDF bytes. answers: {(page, slot): text}; marks: {(page, slot, 'stuck'|'easy'): fill 0..1};
+    ticks: [(page, cx, cy)] checkmarks anywhere (the French circle); writing: {page: [lines]} on a narration page."""
     s = dpi / 72
     pages = []
     for n, page in enumerate(pdfium.PdfDocument(packet), 1):
@@ -45,6 +46,11 @@ def fill_in(packet: bytes, answers: dict, marks: dict, dpi=150, slots=6) -> list
                 else:  # a stray dot: too little to call, goes to review
                     rr = 0.9
                     d.ellipse([(cx - rr) * s, (cy - rr) * s, (cx + rr) * s, (cy + rr) * s], fill=80)
+        for pg, cx, cy in ticks:
+            if pg == n:
+                d.line([((cx - 6) * s, cy * s), ((cx - 1) * s, (cy + 6) * s), ((cx + 10) * s, (cy - 12) * s)], fill=90, width=int(1.5 * s))
+        for i, line in enumerate((writing or {}).get(n, [])):
+            d.text((62 * s, (L.NARRATION_TOP - 22 + i * L.LINE_GAP) * s), line, fill=70, font=font(int(20 * s)))
         pages.append(img)
     return pages
 

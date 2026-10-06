@@ -2,10 +2,11 @@
 
 import json
 
-from hs import config, db, layout as L
+from hs import config, db, layout as L, readings, weather, words
 from hs.generators.math import generate
 
 EXAMPLES_PER_PAGE = 3
+EXAMPLES_FIRST_PAGE = 2   # page 1 shares its space with the weather and the word of the day
 
 
 def plan_daily(con, student: str) -> tuple[list[dict], list[int]]:
@@ -56,22 +57,43 @@ def plan_test() -> list[dict]:
     return [dict(skill=sks[i * len(sks) // 10]["id"], level=3, kind="new") for i in range(10)]
 
 
+def positions(n: int, per: int, first: int) -> list[tuple[int, int]]:
+    """(page offset, slot) for n problems, `per` to a page, the first page starting at slot `first`."""
+    out, page, slot = [], 0, first
+    for _ in range(n):
+        if slot > per:
+            page, slot = page + 1, 1
+        out.append((page, slot))
+        slot += 1
+    return out
+
+
 def create(con, student: str, date: str, kind: str = "daily") -> str:
     ws_id = f"{date}-{student}-math" + ("" if kind == "daily" else f"-{kind}")
+    st = db.student(con, student)
     if kind == "daily":
         specs, sources = plan_daily(con, student)
     else:
         specs, sources = (plan_placement(con, student) if kind == "placement" else plan_test()), []
 
-    pages = [{"page": i + 1, "kind": "examples", "sources": sources[j:j + EXAMPLES_PER_PAGE]}
-             for i, j in enumerate(range(0, len(sources), EXAMPLES_PER_PAGE))]
+    groups = [sources[:EXAMPLES_FIRST_PAGE]] + [sources[j:j + EXAMPLES_PER_PAGE]
+                                                for j in range(EXAMPLES_FIRST_PAGE, len(sources), EXAMPLES_PER_PAGE)]
+    pages = [{"page": i + 1, "kind": "examples", "sources": g} for i, g in enumerate(groups) if g]
     first_problem_page = len(pages) + 1
     per = config.settings()["math"]["problems_per_page"]
-    n_pages = -(-len(specs) // per)
+    # Page 1 opens with the weather and the word of the day, so its problems start lower down.
+    where = positions(len(specs), per, 1 + L.today_slots(per) if first_problem_page == 1 else 1)
+    n_pages = where[-1][0] + 1 if where else 0
     pages += [{"page": first_problem_page + i, "kind": "problems", "slots": per} for i in range(n_pages)]
+    if pages:
+        pages[0]["today"] = True
 
-    con.execute("INSERT INTO worksheet (id, student, date, subject, kind, status, pages) VALUES (?,?,?,?,?,?,?)",
-                (ws_id, student, date, "math", kind, "printed", json.dumps(pages)))
+    extras = readings.plan(con, st, date) if kind == "daily" else []
+    reading = next((readings.text(x["item"]) for x in extras if x["subject"] != "french"), None)
+    word = words.pick(con, st, date, reading)
+    forecast = weather.for_family(db.family(con, st["family_id"]), date)
+    con.execute("INSERT INTO worksheet (id, student, date, subject, kind, status, pages, weather) VALUES (?,?,?,?,?,?,?,?)",
+                (ws_id, student, date, "math", kind, "printed", json.dumps(pages), json.dumps(forecast) if forecast else None))
     seen = set()
     for i, spec in enumerate(specs):
         for attempt in range(20):  # avoid repeating a problem within one packet
@@ -82,9 +104,19 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
         seen.add(prob.prompt)
         con.execute("""INSERT INTO problem (worksheet_id, page, slot, number, skill, level, kind, seed,
                        prompt, answer, form, hint, steps, source_problem_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                    (ws_id, first_problem_page + i // per, i % per + 1, i + 1, spec["skill"], spec["level"],
+                    (ws_id, first_problem_page + where[i][0], where[i][1], i + 1, spec["skill"], spec["level"],
                      spec["kind"], seed, prob.prompt, prob.answer, prob.form, prob.hint, json.dumps(prob.steps),
                      spec.get("source")))
+    con.execute("INSERT INTO assignment (worksheet_id, subject, item, page) VALUES (?,?,?,1)", (ws_id, "word", word["word"]))
+    if extras:
+        for extra in extras:
+            page = 1
+            if extra["subject"] != "french":  # numbered for real when the packet is rendered
+                page = len(pages) + 2
+                pages += [{"page": page - 1, "kind": "reading", **extra}, {"page": page, "kind": "narration", **extra}]
+            con.execute("INSERT INTO assignment (worksheet_id, subject, item, page) VALUES (?,?,?,?)",
+                        (ws_id, extra["subject"], extra["item"], page))
+        con.execute("UPDATE worksheet SET pages=? WHERE id=?", (json.dumps(pages), ws_id))
     con.executemany("UPDATE response SET scaffolded=1 WHERE problem_id=?", [(pid,) for pid in sources])
     con.commit()
     return ws_id

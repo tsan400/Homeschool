@@ -4,6 +4,8 @@ The renderer places everything at these coordinates and the scanner crops at
 the same coordinates, so the two can't drift apart.
 """
 
+import math
+
 PAGE_W, PAGE_H = 612, 792
 
 # ArUco markers (4x4 dictionary, ids 0-3) in the corners, used to straighten scans.
@@ -20,8 +22,20 @@ BUBBLE_X, BUBBLE_R = 532, 9
 BUBBLE_DY = {"stuck": 32, "easy": 70}
 
 
+FRENCH = (80, 750, 9)  # cx, cy, r: "did my French lesson" circle, bottom of page 1
+
+TODAY_H = 186           # weather and word of the day, at the top of page 1's body
+
+NARRATION_TOP, LINE_GAP = 200, 30  # writing lines on a narration page
+
+
 def slot_h(slots: int) -> float:
     return (BODY_BOTTOM - BODY_TOP) / slots
+
+
+def today_slots(slots: int) -> int:
+    """How many problem slots the page-1 weather and word panel takes up."""
+    return math.ceil((TODAY_H + 8) / slot_h(slots))
 
 
 def slot_top(slot: int, slots: int) -> float:

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 import pypdfium2 as pdfium
+import zxingcpp
 
 from hs import layout as L
 
@@ -17,6 +18,7 @@ SEARCH = 10            # pixels: how far a patch may be off after straightening 
 BUBBLE_MARKED = 0.02   # share of the area around a circle that is the child's ink
 BUBBLE_EMPTY = 0.012   # between the two -> "unclear", sent to review
 BLANK_INK = 0.001      # answer box with less of the child's ink than this is blank
+WRITTEN = 0.003        # narration page with more of the child's ink than this was written on
 
 
 class ScanError(Exception):
@@ -61,7 +63,10 @@ class Page:
         return (around[at] < paper[at] * INK) & ~mask
 
     def bubble_fill(self, slot: int, which: str) -> float:
-        cx, cy, r = L.bubble(slot, which, self.slots)
+        return self.mark_fill(*L.bubble(slot, which, self.slots))
+
+    def mark_fill(self, cx: float, cy: float, r: float) -> float:
+        """Share of the area around a printed circle covered by the child's ink."""
         R = r * 1.4  # ticks often stray past the outline
         added = self.added_ink(cx - R, cy - R, 2 * R, 2 * R)
         h, w = added.shape
@@ -76,6 +81,11 @@ class Page:
         added = self.added_ink(x - 4, y - 4, w + 8, h + 8)
         k = self.px(8)
         return float(added[k:-k, k:-k].mean())
+
+    def writing(self) -> float:
+        """Share of a narration page's lined area covered by the child's ink."""
+        top = L.NARRATION_TOP - L.LINE_GAP
+        return float(self.added_ink(56, top, L.PAGE_W - 112, L.BODY_BOTTOM - top).mean())
 
     def answer_png(self, slot: int) -> bytes:
         """The answer box plus a small margin, for the handwriting reader and the review queue."""
@@ -119,11 +129,15 @@ def straighten(img: np.ndarray, scale: float) -> np.ndarray:
 
 
 def read_qr(page: np.ndarray, scale: float) -> dict | None:
-    """Decode the page's QR code. Phone photos can be soft, shadowed or noisy, so try two
-    detectors on progressively cleaned-up versions of the QR corner, then the whole page."""
+    """Decode the page's QR code. Phone photos can be soft, shadowed or noisy, so try ZXing, then
+    two OpenCV detectors on progressively cleaned-up versions of the QR corner, then the whole page."""
     x, y, s = L.QR
     m = 20
     region = page[int((y - m) * scale):int((y + s + m) * scale), int((x - m) * scale):int((x + s + m) * scale)]
+    for candidate in (region, page):
+        for found in zxingcpp.read_barcodes(candidate, formats=zxingcpp.BarcodeFormat.QRCode):
+            if payload := L.parse_qr(found.text):
+                return payload
     big = cv2.resize(region, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
     sharp = cv2.addWeighted(big, 2.0, cv2.GaussianBlur(big, (0, 0), 4), -1.0, 0)
     otsu = cv2.threshold(sharp, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]

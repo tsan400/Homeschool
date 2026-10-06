@@ -110,11 +110,47 @@ Each topic has a `mode`:
 `skills.yaml` holds the topics the engine currently generates. A test keeps it in the same
 grade and order as the curriculum.
 
+### History, science and French
+
+A child with an AmblesideOnline year set on the Family page gets that year's readings in
+order, one a day: history on Monday (*This Country of Ours*), science on Tuesday and Thursday
+(Fabre's *Story-Book of Science*), and nature lore on Wednesday (*Madam How and Lady Why*).
+Friday is math and French only. The days are set in `settings.yaml` under `ao.days`.
+All three books are public domain. The chapter is printed in the packet and followed by a
+narration page, which the child can write on or skip by telling it back out loud. A missed
+day doesn't skip a reading: the next one goes out on the next matching weekday.
+
+`content/ao/year4/` is built from the Project Gutenberg texts by `scripts/build_ao.py`,
+following AmblesideOnline's Year 4 schedule from Week 1. Other years can be added the same way.
+
+French is taught by ear first, as Charlotte Mason recommends. Page 1 names the day's audio
+lesson (`french.program` in `settings.yaml`) with a circle to fill in once it's done. The lesson
+moves on only once that circle is marked, or once the parent ticks it on the day page.
+
+### Word of the day and weather
+
+Page 1 opens with a word of the day: the word, its part of speech, a meaning and an example
+sentence. The words come from `content/words.yaml`, with one list for grades 3-5 and one for
+grades 6-8. A child never gets the same word twice. On a reading day, a word from that
+day's chapter is chosen first.
+
+Next to it is the day's weather, if the family has set a town or ZIP on the Family page:
+- The forecast comes from Open-Meteo, which needs no API key. Its free tier is for
+  non-commercial use, so check its terms before charging families.
+- The town is looked up once, with OpenStreetMap's Nominatim, and stored rounded to about
+  a kilometre.
+- If no forecast can be fetched, the word of the day takes the full width and the packet
+  prints as usual.
+
 ## How it works
 
-- **Pages.** Each page has corner markers, a QR code (student, date, worksheet, page), five
-  problems, a boxed answer area, and "stuck" and "too easy" circles. Pages can be scanned in
-  any order and any orientation.
+- **Pages.** Each page has corner markers and a QR code (worksheet and page). A math page has
+  six problems, each with a boxed answer area and "stuck" and "too easy" circles. Pages can be
+  scanned in any order and any orientation.
+- **Look.** Packets are black and white. Words are in Nunito, numbers in Fira Math and
+  readings in Literata. All three are bundled in `src/hs/fonts`, with their open font
+  licences. The QR codes are drawn with round dots and gently rounded corners. ZXing reads them
+  first and OpenCV is the backup, and a test checks that both can.
 - **Reading.** The scan is straightened using the corner markers. The circles are read by
   measuring how dark they are. Each non-blank answer box is sent to Claude, which only
   transcribes what was written and reports its confidence. It never grades.
@@ -138,8 +174,12 @@ grade and order as the curriculum.
 ```
 config/settings.yaml   engine settings: model, confidence threshold, level rules, packet size
 content/math/          curriculum.yaml (K-12 map) and skills.yaml (the part the engine generates)
+content/ao/year4/      AmblesideOnline Year 4 readings (public domain), built by scripts/build_ao.py
+content/words.yaml     word of the day, by grade band
 src/hs/                web (portal), accounts, jobs (grading queue), packets, planner, generators,
-                       render (Typst), scan, read (Claude), grade, levels, vault, mail
+                       render (Typst), scan, read (Claude), grade, levels, vault, mail,
+                       readings (AO and French), words, weather
+src/hs/fonts/          Nunito, Literata, Fira Math (SIL Open Font License)
 src/hs/templates/      portal pages
 HS_HOME/hs.db          SQLite: families, children, levels, results (not in git)
 HS_HOME/files/<family>/   encrypted packets, keys, page images, crops, pending uploads

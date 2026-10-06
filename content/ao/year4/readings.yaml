@@ -1,0 +1,847 @@
+year: 4
+source: AmblesideOnline Year 4 schedule, https://www.amblesideonline.org/year-4-schedule
+books:
+  This Country of Ours: 'H. E. Marshall, 1917 (Project Gutenberg #3761)'
+  The Story-Book of Science: 'Jean-Henri Fabre, tr. F. C. Bicknell, 1917 (Project Gutenberg #56795)'
+  Madam How and Lady Why: 'Charles Kingsley, 1869 (Project Gutenberg #1697)'
+readings:
+- id: tcoo-29
+  stream: history
+  week: 1
+  book: This Country of Ours
+  title: 'Chapter 29: The Founding of Connecticut and War with the Indians'
+  words: 2040
+- id: fabre-1
+  stream: science
+  week: 1
+  book: The Story-Book of Science
+  title: 'Chapter 1: The Six'
+  words: 990
+- id: fabre-2
+  stream: science
+  week: 1
+  book: The Story-Book of Science
+  title: 'Chapter 2: The Fairy Tale and the True Story'
+  words: 876
+- id: madamhow-1
+  stream: nature
+  week: 1
+  book: Madam How and Lady Why
+  title: Preface
+  words: 1666
+- id: tcoo-30
+  stream: history
+  week: 2
+  book: This Country of Ours
+  title: 'Chapter 30: The Founding of New Haven'
+  words: 736
+- id: fabre-3
+  stream: science
+  week: 2
+  book: The Story-Book of Science
+  title: 'Chapter 3: The Building of the City'
+  words: 1054
+- id: fabre-4
+  stream: science
+  week: 2
+  book: The Story-Book of Science
+  title: 'Chapter 4: The Cows'
+  words: 866
+- id: madamhow-2
+  stream: nature
+  week: 2
+  book: Madam How and Lady Why
+  title: 'Chapter 1: The Glen (part 1 of 6)'
+  words: 1125
+- id: tcoo-31
+  stream: history
+  week: 3
+  book: This Country of Ours
+  title: 'Chapter 31: The Hunt for the Regicides'
+  words: 1353
+- id: fabre-5
+  stream: science
+  week: 3
+  book: The Story-Book of Science
+  title: 'Chapter 5: The Sheepfold'
+  words: 1361
+- id: fabre-6
+  stream: science
+  week: 3
+  book: The Story-Book of Science
+  title: 'Chapter 6: The Wily Dervish'
+  words: 943
+- id: madamhow-3
+  stream: nature
+  week: 3
+  book: Madam How and Lady Why
+  title: 'Chapter 1: The Glen (part 2 of 6)'
+  words: 1333
+- id: tcoo-32
+  stream: history
+  week: 4
+  book: This Country of Ours
+  title: 'Chapter 32: King Philip''s War'
+  words: 1392
+- id: fabre-7
+  stream: science
+  week: 4
+  book: The Story-Book of Science
+  title: 'Chapter 7: A Numerous Family'
+  words: 1602
+- id: fabre-8
+  stream: science
+  week: 4
+  book: The Story-Book of Science
+  title: 'Chapter 8: The Old Pear-Tree'
+  words: 670
+- id: madamhow-4
+  stream: nature
+  week: 4
+  book: Madam How and Lady Why
+  title: 'Chapter 1: The Glen (part 3 of 6)'
+  words: 1054
+- id: tcoo-33
+  stream: history
+  week: 5
+  book: This Country of Ours
+  title: 'Chapter 33: How The Charter of Connecticut Was Saved'
+  words: 1849
+- id: fabre-9
+  stream: science
+  week: 5
+  book: The Story-Book of Science
+  title: 'Chapter 9: The Age of Trees'
+  words: 1148
+- id: fabre-10
+  stream: science
+  week: 5
+  book: The Story-Book of Science
+  title: 'Chapter 10: The Length of Animal Life'
+  words: 870
+- id: madamhow-5
+  stream: nature
+  week: 5
+  book: Madam How and Lady Why
+  title: 'Chapter 1: The Glen (part 4 of 6)'
+  words: 959
+- id: tcoo-34
+  stream: history
+  week: 6
+  book: This Country of Ours
+  title: 'Chapter 34: The Witches of Salem'
+  words: 1487
+- id: fabre-11
+  stream: science
+  week: 6
+  book: The Story-Book of Science
+  title: 'Chapter 11: The Kettle'
+  words: 569
+- id: fabre-12
+  stream: science
+  week: 6
+  book: The Story-Book of Science
+  title: 'Chapter 12: Metals'
+  words: 637
+- id: madamhow-6
+  stream: nature
+  week: 6
+  book: Madam How and Lady Why
+  title: 'Chapter 1: The Glen (part 5 of 6)'
+  words: 1183
+- id: tcoo-35
+  stream: history
+  week: 7
+  book: This Country of Ours
+  title: 'Chapter 35: The Founding of Maryland'
+  words: 1345
+- id: fabre-13
+  stream: science
+  week: 7
+  book: The Story-Book of Science
+  title: 'Chapter 13: Metal Plating'
+  words: 967
+- id: fabre-14
+  stream: science
+  week: 7
+  book: The Story-Book of Science
+  title: 'Chapter 14: Gold and Iron'
+  words: 1064
+- id: madamhow-7
+  stream: nature
+  week: 7
+  book: Madam How and Lady Why
+  title: 'Chapter 1: The Glen (part 6 of 6)'
+  words: 1428
+- id: tcoo-36
+  stream: history
+  week: 8
+  book: This Country of Ours
+  title: 'Chapter 36: How New Amsterdam Became New York'
+  words: 2782
+- id: fabre-18
+  stream: science
+  week: 8
+  book: The Story-Book of Science
+  title: 'Chapter 18: Paper'
+  words: 623
+- id: fabre-20
+  stream: science
+  week: 8
+  book: The Story-Book of Science
+  title: 'Chapter 20: Printing'
+  words: 859
+- id: madamhow-8
+  stream: nature
+  week: 8
+  book: Madam How and Lady Why
+  title: 'Chapter 2: Earthquakes (part 1 of 5)'
+  words: 1435
+- id: tcoo-37
+  stream: history
+  week: 9
+  book: This Country of Ours
+  title: 'Chapter 37: How a German Ruled New York'
+  words: 1200
+- id: fabre-21
+  stream: science
+  week: 9
+  book: The Story-Book of Science
+  title: 'Chapter 21: Butterflies'
+  words: 1091
+- id: fabre-22
+  stream: science
+  week: 9
+  book: The Story-Book of Science
+  title: 'Chapter 22: The Big Eaters'
+  words: 1342
+- id: madamhow-9
+  stream: nature
+  week: 9
+  book: Madam How and Lady Why
+  title: 'Chapter 2: Earthquakes (part 2 of 5)'
+  words: 1479
+- id: tcoo-38
+  stream: history
+  week: 10
+  book: This Country of Ours
+  title: 'Chapter 38: Pirates!'
+  words: 1535
+- id: fabre-23
+  stream: science
+  week: 10
+  book: The Story-Book of Science
+  title: 'Chapter 23: Silk'
+  words: 1075
+- id: fabre-24
+  stream: science
+  week: 10
+  book: The Story-Book of Science
+  title: 'Chapter 24: The Metamorphosis'
+  words: 877
+- id: madamhow-10
+  stream: nature
+  week: 10
+  book: Madam How and Lady Why
+  title: 'Chapter 2: Earthquakes (part 3 of 5)'
+  words: 874
+- id: tcoo-39
+  stream: history
+  week: 11
+  book: This Country of Ours
+  title: 'Chapter 39: The Founding of New Jersey'
+  words: 570
+- id: fabre-25
+  stream: science
+  week: 11
+  book: The Story-Book of Science
+  title: 'Chapter 25: Spiders'
+  words: 945
+- id: fabre-26
+  stream: science
+  week: 11
+  book: The Story-Book of Science
+  title: 'Chapter 26: The Epeira''s Bridge'
+  words: 1028
+- id: madamhow-11
+  stream: nature
+  week: 11
+  book: Madam How and Lady Why
+  title: 'Chapter 2: Earthquakes (part 4 of 5)'
+  words: 586
+- id: tcoo-40
+  stream: history
+  week: 12
+  book: This Country of Ours
+  title: 'Chapter 40: The Founding of Pennsylvania'
+  words: 2398
+- id: fabre-27
+  stream: science
+  week: 12
+  book: The Story-Book of Science
+  title: 'Chapter 27: The Spider''s Web'
+  words: 1017
+- id: fabre-28
+  stream: science
+  week: 12
+  book: The Story-Book of Science
+  title: 'Chapter 28: The Chase'
+  words: 1315
+- id: madamhow-12
+  stream: nature
+  week: 12
+  book: Madam How and Lady Why
+  title: 'Chapter 2: Earthquakes (part 5 of 5)'
+  words: 997
+- id: fabre-29
+  stream: science
+  week: 13
+  book: The Story-Book of Science
+  title: 'Chapter 29: Venomous Insects'
+  words: 1342
+- id: fabre-30
+  stream: science
+  week: 13
+  book: The Story-Book of Science
+  title: 'Chapter 30: Venom'
+  words: 851
+- id: madamhow-13
+  stream: nature
+  week: 13
+  book: Madam How and Lady Why
+  title: 'Chapter 3: Volcanoes (part 1 of 6)'
+  words: 702
+- id: tcoo-41
+  stream: history
+  week: 14
+  book: This Country of Ours
+  title: 'Chapter 41: How Benjamin Franklin Came to Philadelphia'
+  words: 737
+- id: fabre-31
+  stream: science
+  week: 14
+  book: The Story-Book of Science
+  title: 'Chapter 31: The Viper and the Scorpion'
+  words: 951
+- id: fabre-32
+  stream: science
+  week: 14
+  book: The Story-Book of Science
+  title: 'Chapter 32: The Nettle'
+  words: 803
+- id: madamhow-14
+  stream: nature
+  week: 14
+  book: Madam How and Lady Why
+  title: 'Chapter 3: Volcanoes (part 2 of 6)'
+  words: 837
+- id: tcoo-42
+  stream: history
+  week: 15
+  book: This Country of Ours
+  title: 'Chapter 42: The Founding of North and South Carolina'
+  words: 1132
+- id: fabre-33
+  stream: science
+  week: 15
+  book: The Story-Book of Science
+  title: 'Chapter 33: Processionary Caterpillars'
+  words: 1445
+- id: fabre-34
+  stream: science
+  week: 15
+  book: The Story-Book of Science
+  title: 'Chapter 34: The Storm'
+  words: 1148
+- id: madamhow-15
+  stream: nature
+  week: 15
+  book: Madam How and Lady Why
+  title: 'Chapter 3: Volcanoes (part 3 of 6)'
+  words: 1333
+- id: tcoo-43
+  stream: history
+  week: 16
+  book: This Country of Ours
+  title: 'Chapter 43: War With the Indians in North and South Carolina'
+  words: 1678
+- id: fabre-35
+  stream: science
+  week: 16
+  book: The Story-Book of Science
+  title: 'Chapter 35: Electricity'
+  words: 1111
+- id: fabre-36-37
+  stream: science
+  week: 16
+  book: The Story-Book of Science
+  title: 'Chapters 36 and 37: The Experiment with the Cat / The Experiment with Paper'
+  words: 952
+- id: madamhow-16
+  stream: nature
+  week: 16
+  book: Madam How and Lady Why
+  title: 'Chapter 3: Volcanoes (part 4 of 6)'
+  words: 768
+- id: tcoo-44
+  stream: history
+  week: 17
+  book: This Country of Ours
+  title: 'Chapter 44: The Founding of Georgia'
+  words: 3030
+- id: fabre-38
+  stream: science
+  week: 17
+  book: The Story-Book of Science
+  title: 'Chapter 38: Franklin and De Romas'
+  words: 1641
+- id: fabre-39
+  stream: science
+  week: 17
+  book: The Story-Book of Science
+  title: 'Chapter 39: Thunder and the Lightning-Rod'
+  words: 1705
+- id: madamhow-17
+  stream: nature
+  week: 17
+  book: Madam How and Lady Why
+  title: 'Chapter 3: Volcanoes (part 5 of 6)'
+  words: 1021
+- id: tcoo-45
+  stream: history
+  week: 18
+  book: This Country of Ours
+  title: 'Chapter 45: How the Mississippi was Discovered'
+  words: 1973
+- id: fabre-40
+  stream: science
+  week: 18
+  book: The Story-Book of Science
+  title: 'Chapter 40: Effects of the Thunderbolt'
+  words: 445
+- id: fabre-41
+  stream: science
+  week: 18
+  book: The Story-Book of Science
+  title: 'Chapter 41: Clouds'
+  words: 1349
+- id: madamhow-18
+  stream: nature
+  week: 18
+  book: Madam How and Lady Why
+  title: 'Chapter 3: Volcanoes (part 6 of 6)'
+  words: 831
+- id: tcoo-46
+  stream: history
+  week: 19
+  book: This Country of Ours
+  title: 'Chapter 46: King William''s War and Queen Anne''s War'
+  words: 1637
+- id: fabre-42
+  stream: science
+  week: 19
+  book: The Story-Book of Science
+  title: 'Chapter 42: The Velocity of Sound'
+  words: 1207
+- id: fabre-43
+  stream: science
+  week: 19
+  book: The Story-Book of Science
+  title: 'Chapter 43: The Experiment with the Bottle of Cold Water'
+  words: 1270
+- id: madamhow-19
+  stream: nature
+  week: 19
+  book: Madam How and Lady Why
+  title: 'Chapter 4: The Transformations of a Grain of Soil (part 1 of 6)'
+  words: 713
+- id: tcoo-47
+  stream: history
+  week: 20
+  book: This Country of Ours
+  title: 'Chapter 47: The Mississippi Bubble'
+  words: 2267
+- id: fabre-44
+  stream: science
+  week: 20
+  book: The Story-Book of Science
+  title: 'Chapter 44: Rain'
+  words: 918
+- id: fabre-45
+  stream: science
+  week: 20
+  book: The Story-Book of Science
+  title: 'Chapter 45: Volcanoes'
+  words: 842
+- id: madamhow-20
+  stream: nature
+  week: 20
+  book: Madam How and Lady Why
+  title: 'Chapter 4: The Transformations of a Grain of Soil (part 2 of 6)'
+  words: 1070
+- id: tcoo-48
+  stream: history
+  week: 21
+  book: This Country of Ours
+  title: 'Chapter 48: How a Terrible Disaster Befell the British Army'
+  words: 2679
+- id: fabre-46
+  stream: science
+  week: 21
+  book: The Story-Book of Science
+  title: 'Chapter 46: Catania'
+  words: 1289
+- id: fabre-47
+  stream: science
+  week: 21
+  book: The Story-Book of Science
+  title: 'Chapter 47: The Story of Pliny'
+  words: 1405
+- id: madamhow-21
+  stream: nature
+  week: 21
+  book: Madam How and Lady Why
+  title: 'Chapter 4: The Transformations of a Grain of Soil (part 3 of 6)'
+  words: 674
+- id: tcoo-49
+  stream: history
+  week: 22
+  book: This Country of Ours
+  title: 'Chapter 49: The End of the French Rule in America'
+  words: 1859
+- id: fabre-48
+  stream: science
+  week: 22
+  book: The Story-Book of Science
+  title: 'Chapter 48: The Boiling Pot'
+  words: 1334
+- id: fabre-49
+  stream: science
+  week: 22
+  book: The Story-Book of Science
+  title: 'Chapter 49: The Locomotive'
+  words: 1386
+- id: madamhow-22
+  stream: nature
+  week: 22
+  book: Madam How and Lady Why
+  title: 'Chapter 4: The Transformations of a Grain of Soil (part 4 of 6)'
+  words: 659
+- id: tcoo-50
+  stream: history
+  week: 23
+  book: This Country of Ours
+  title: 'Chapter 50: The Rebellion of Pontiac'
+  words: 1956
+- id: fabre-50
+  stream: science
+  week: 23
+  book: The Story-Book of Science
+  title: 'Chapter 50: Emile''s Observation'
+  words: 1058
+- id: fabre-51
+  stream: science
+  week: 23
+  book: The Story-Book of Science
+  title: 'Chapter 51: A Journey to the End of the World'
+  words: 1478
+- id: madamhow-23
+  stream: nature
+  week: 23
+  book: Madam How and Lady Why
+  title: 'Chapter 4: The Transformations of a Grain of Soil (part 5 of 6)'
+  words: 868
+- id: tcoo-51
+  stream: history
+  week: 24
+  book: This Country of Ours
+  title: 'Chapter 51: The Boston Tea party'
+  words: 1306
+- id: fabre-52
+  stream: science
+  week: 24
+  book: The Story-Book of Science
+  title: 'Chapter 52: The Earth'
+  words: 1405
+- id: fabre-53
+  stream: science
+  week: 24
+  book: The Story-Book of Science
+  title: 'Chapter 53: The Atmosphere'
+  words: 1435
+- id: madamhow-24
+  stream: nature
+  week: 24
+  book: Madam How and Lady Why
+  title: 'Chapter 4: The Transformations of a Grain of Soil (part 6 of 6)'
+  words: 800
+- id: tcoo-52
+  stream: history
+  week: 25
+  book: This Country of Ours
+  title: 'Chapter 52: Paul Revere''s Ride - The Unsheathing of the Sword'
+  words: 1662
+- id: fabre-54
+  stream: science
+  week: 25
+  book: The Story-Book of Science
+  title: 'Chapter 54: The Sun'
+  words: 1601
+- id: fabre-55
+  stream: science
+  week: 25
+  book: The Story-Book of Science
+  title: 'Chapter 55: Day and Night'
+  words: 1777
+- id: madamhow-25
+  stream: nature
+  week: 25
+  book: Madam How and Lady Why
+  title: 'Chapter 5: The Ice-Plough (part 1 of 4)'
+  words: 1534
+- id: tcoo-53
+  stream: history
+  week: 26
+  book: This Country of Ours
+  title: 'Chapter 53: The First Thrust-The Battle of Bunker Hill'
+  words: 2529
+- id: fabre-56
+  stream: science
+  week: 26
+  book: The Story-Book of Science
+  title: 'Chapter 56: The Year and Its Seasons'
+  words: 1584
+- id: fabre-57
+  stream: science
+  week: 26
+  book: The Story-Book of Science
+  title: 'Chapter 57: Belladonna Berries'
+  words: 967
+- id: madamhow-26
+  stream: nature
+  week: 26
+  book: Madam How and Lady Why
+  title: 'Chapter 5: The Ice-Plough (part 2 of 4)'
+  words: 561
+- id: tcoo-54
+  stream: history
+  week: 27
+  book: This Country of Ours
+  title: 'Chapter 54: The War In Canada'
+  words: 1558
+- id: fabre-58
+  stream: science
+  week: 27
+  book: The Story-Book of Science
+  title: 'Chapter 58: Poisonous Plants'
+  words: 1808
+- id: fabre-59
+  stream: science
+  week: 27
+  book: The Story-Book of Science
+  title: 'Chapter 59: The Blossom'
+  words: 1288
+- id: madamhow-27
+  stream: nature
+  week: 27
+  book: Madam How and Lady Why
+  title: 'Chapter 5: The Ice-Plough (part 3 of 4)'
+  words: 1193
+- id: tcoo-55
+  stream: history
+  week: 28
+  book: This Country of Ours
+  title: 'Chapter 55: The Birth of A Great Nation'
+  words: 1284
+- id: fabre-60
+  stream: science
+  week: 28
+  book: The Story-Book of Science
+  title: 'Chapter 60: Fruit'
+  words: 837
+- id: fabre-61
+  stream: science
+  week: 28
+  book: The Story-Book of Science
+  title: 'Chapter 61: Pollen'
+  words: 1204
+- id: madamhow-28
+  stream: nature
+  week: 28
+  book: Madam How and Lady Why
+  title: 'Chapter 5: The Ice-Plough (part 4 of 4)'
+  words: 903
+- id: tcoo-56
+  stream: history
+  week: 29
+  book: This Country of Ours
+  title: 'Chapter 56: The Darkest Hour - Trenton and Princeton'
+  words: 2705
+- id: fabre-62
+  stream: science
+  week: 29
+  book: The Story-Book of Science
+  title: 'Chapter 62: The Bumble-Bee'
+  words: 1337
+- id: fabre-63
+  stream: science
+  week: 29
+  book: The Story-Book of Science
+  title: 'Chapter 63: Mushrooms'
+  words: 1183
+- id: madamhow-29
+  stream: nature
+  week: 29
+  book: Madam How and Lady Why
+  title: 'Chapter 6: The True Fairy Tale (part 1 of 4)'
+  words: 1258
+- id: tcoo-57
+  stream: history
+  week: 30
+  book: This Country of Ours
+  title: 'Chapter 57: Burgoyne''s Campaign - Bennington and Oriskany'
+  words: 1728
+- id: fabre-64
+  stream: science
+  week: 30
+  book: The Story-Book of Science
+  title: 'Chapter 64: In the Woods'
+  words: 957
+- id: fabre-65
+  stream: science
+  week: 30
+  book: The Story-Book of Science
+  title: 'Chapter 65: The Orange-Agaric'
+  words: 984
+- id: madamhow-30
+  stream: nature
+  week: 30
+  book: Madam How and Lady Why
+  title: 'Chapter 6: The True Fairy Tale (part 2 of 4)'
+  words: 827
+- id: tcoo-58
+  stream: history
+  week: 31
+  book: This Country of Ours
+  title: 'Chapter 58: Burgoyne''s Campaign - Bemis Heights and Saratoga'
+  words: 1737
+- id: fabre-66
+  stream: science
+  week: 31
+  book: The Story-Book of Science
+  title: 'Chapter 66: Earthquakes'
+  words: 1623
+- id: fabre-70
+  stream: science
+  week: 31
+  book: The Story-Book of Science
+  title: 'Chapter 70: Shells'
+  words: 1130
+- id: madamhow-31
+  stream: nature
+  week: 31
+  book: Madam How and Lady Why
+  title: 'Chapter 6: The True Fairy Tale (part 3 of 4)'
+  words: 1559
+- id: tcoo-59
+  stream: history
+  week: 32
+  book: This Country of Ours
+  title: 'Chapter 59: Brandywine - Germantown - Valley Forge'
+  words: 1228
+- id: fabre-71
+  stream: science
+  week: 32
+  book: The Story-Book of Science
+  title: 'Chapter 71: The Spiral Snail'
+  words: 819
+- id: fabre-72
+  stream: science
+  week: 32
+  book: The Story-Book of Science
+  title: 'Chapter 72: Mother-Of-Pearl and Pearls'
+  words: 974
+- id: madamhow-32
+  stream: nature
+  week: 32
+  book: Madam How and Lady Why
+  title: 'Chapter 6: The True Fairy Tale (part 4 of 4)'
+  words: 648
+- id: tcoo-60
+  stream: history
+  week: 33
+  book: This Country of Ours
+  title: 'Chapter 60: War on the Sea'
+  words: 2521
+- id: fabre-73
+  stream: science
+  week: 33
+  book: The Story-Book of Science
+  title: 'Chapter 73: The Sea'
+  words: 1012
+- id: fabre-74
+  stream: science
+  week: 33
+  book: The Story-Book of Science
+  title: 'Chapter 74: Waves Salt Seaweeds'
+  words: 1319
+- id: madamhow-33
+  stream: nature
+  week: 33
+  book: Madam How and Lady Why
+  title: 'Chapter 9: On Wisdom and Foolishness (from The Coral-Reef)'
+  words: 1045
+- id: tcoo-61
+  stream: history
+  week: 34
+  book: This Country of Ours
+  title: 'Chapter 61: The Battle of Monmouth - The Story of Captain Molly'
+  words: 1306
+- id: fabre-75
+  stream: science
+  week: 34
+  book: The Story-Book of Science
+  title: 'Chapter 75: Running Waters'
+  words: 1031
+- id: fabre-76
+  stream: science
+  week: 34
+  book: The Story-Book of Science
+  title: 'Chapter 76: The Swarm'
+  words: 1134
+- id: tcoo-62
+  stream: history
+  week: 35
+  book: This Country of Ours
+  title: 'Chapter 62: The Story of a Great Crime'
+  words: 1416
+- id: fabre-77
+  stream: science
+  week: 35
+  book: The Story-Book of Science
+  title: 'Chapter 77: Wax'
+  words: 1034
+- id: fabre-78
+  stream: science
+  week: 35
+  book: The Story-Book of Science
+  title: 'Chapter 78: The Cells'
+  words: 1596
+- id: tcoo-63
+  stream: history
+  week: 36
+  book: This Country of Ours
+  title: 'Chapter 63: A Turning Point in the World''s History'
+  words: 935
+- id: fabre-79
+  stream: science
+  week: 36
+  book: The Story-Book of Science
+  title: 'Chapter 79: Honey'
+  words: 1413
+- id: fabre-80
+  stream: science
+  week: 36
+  book: The Story-Book of Science
+  title: 'Chapter 80: The Queen Bee'
+  words: 1597
