@@ -54,6 +54,15 @@ def test_french_moves_on_once_marked_done(con, ao_kid):
     assert extras(con, packets.make(con, sid, WEEK[1]))["french"] == "lesson-2"
 
 
+def test_a_placement_day_keeps_its_readings_and_french(con, ao_kid):
+    fid, sid = ao_kid
+    tuesday = extras(con, packets.make(con, sid, WEEK[1], kind="placement"))
+    assert tuesday["science"] == "fabre-1" and tuesday["french"] == "lesson-1"
+    # A second packet that day doesn't repeat them, and the next science day carries on.
+    assert set(extras(con, packets.make(con, sid, WEEK[1]))) == {"word"}
+    assert extras(con, packets.make(con, sid, WEEK[3]))["science"] == "fabre-2"
+
+
 def test_math_only_children_get_no_readings(con, family):
     fid, kids = family
     assert set(extras(con, packets.make(con, kids["hannah"], WEEK[0]))) == {"word"}

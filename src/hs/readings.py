@@ -56,7 +56,11 @@ def french_lesson(con, student) -> int:
 
 
 def plan(con, student, day: str) -> list[dict]:
-    """The extra subjects for a daily packet: [{subject, item}], readings first, French last."""
+    """The extra subjects for a day's packet: [{subject, item}], readings first, French last.
+    A second packet on the same day gets none, since the first already has them."""
+    if con.execute("""SELECT 1 FROM assignment a JOIN worksheet w ON w.id = a.worksheet_id
+                      WHERE w.student=? AND w.date=? AND a.subject != 'word'""", (student["id"], day)).fetchone():
+        return []
     out = []
     if student["ao_year"]:
         subject = config.settings()["ao"]["days"].get(WEEKDAYS[Date.fromisoformat(day).weekday()])

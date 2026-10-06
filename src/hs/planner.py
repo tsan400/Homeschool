@@ -98,7 +98,8 @@ def create(con, student: str, date: str, kind: str = "daily") -> str:
             if sources:
                 pages[0]["examples"] = sources
 
-    extras = readings.plan(con, st, date) if kind == "daily" else []
+    # A placement packet stands in for the day's math, so the day's readings and French go with it.
+    extras = readings.plan(con, st, date) if kind in ("daily", "placement") else []
     reading = next((readings.text(x["item"]) for x in extras if x["subject"] != "french"), None)
     word = words.pick(con, st, date, reading)
     forecast = weather.for_family(db.family(con, st["family_id"]), date)
