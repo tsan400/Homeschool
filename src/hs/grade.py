@@ -45,8 +45,17 @@ def parse_remainder(text: str) -> tuple[int, int] | None:
     return (int(m[1]), int(m[2] or 0)) if m else None
 
 
-def check(text: str, key: str, form: str) -> bool | None:
+def filled_in(prompt: str, key: str) -> str | None:
+    """'Fill in the missing number: $3/5 = square/15$' with key 9 -> '9/15': the side with the
+    box, filled in. Children often write that whole side, and the right number is in it."""
+    m = re.search(r"=\s*([^=$]*square[^=$]*)\$", prompt or "")
+    return re.sub(r"\s+", "", m[1].replace("square", key)) if m else None
+
+
+def check(text: str, key: str, form: str, prompt: str = "") -> bool | None:
     """True/False, or None when the child's answer can't be parsed (sent to review)."""
+    if (whole := filled_in(prompt, key)) and re.sub(r"\s+", "", clean(text)) == whole:
+        return True
     if form == "remainder":
         got, want = parse_remainder(text), parse_remainder(key)
         return None if got is None else got == want
@@ -111,7 +120,7 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
                                 (int(fill >= scan.BUBBLE_MARKED), fill, ws_id, subject))
                     report.append(f"French, lesson {readings.lesson_info(a['item'])['n']}: " + (
                         "done" if fill >= scan.BUBBLE_MARKED else "unclear mark, check it" if fill > scan.BUBBLE_EMPTY else "not marked"))
-                elif page.writing() > scan.WRITTEN:  # a blank page may still mean it was told out loud
+                elif subject != "word" and page.writing() > scan.WRITTEN:  # a blank page may still mean it was told out loud
                     con.execute("UPDATE assignment SET done=1 WHERE worksheet_id=? AND subject=?", (ws_id, subject))
             for p in db.problems(con, ws_id, n):
                 png = page.answer_png(p["slot"])
@@ -131,7 +140,7 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
             else:
                 r = reads[str(pid)]
                 text, conf = r["text"], float(r["confidence"])
-                correct = check(text, p["answer"], p["form"])
+                correct = check(text, p["answer"], p["form"], p["prompt"])
                 if correct is None:
                     reasons.append("answer not understood")
                 if conf < st["confidence_threshold"]:

@@ -338,7 +338,7 @@ def create_app(transcribe=read.transcribe, background: bool = True) -> FastAPI:
                 continue
             text = str(form.get(f"t{pid}", r["transcription"] or "")).strip()
             correct = form.get(f"c{pid}") == "1"
-            if text != (r["transcription"] or "") and (auto := grade.check(text, r["answer"], r["form"])) is not None:
+            if text != (r["transcription"] or "") and (auto := grade.check(text, r["answer"], r["form"], r["prompt"])) is not None:
                 correct = auto  # the parent corrected the reading: re-grade it
             con.execute("""UPDATE response SET transcription=?, blank=?, correct=?, stuck=?, too_easy=?, excluded=?,
                            reviewed=1, confidence=CASE WHEN transcription=? THEN confidence ELSE 1.0 END WHERE problem_id=?""",
