@@ -23,8 +23,10 @@ def plan_daily(con, student: str) -> tuple[list[dict], list[int]]:
         ORDER BY w.date DESC, p.number LIMIT ?""", (student, s["max_stuck_examples"])).fetchall()
     scaffolds = []
     for p in stuck:
-        scaffolds += [dict(skill=p["skill"], level=max(1, p["level"] - 1), kind="scaffold", source=p["id"]),
-                      dict(skill=p["skill"], level=p["level"], kind="scaffold", source=p["id"])]
+        # Never above the child's level now: a placement may have moved the skill back down.
+        top = min(p["level"], levels[p["skill"]]["level"])
+        scaffolds += [dict(skill=p["skill"], level=max(1, top - 1), kind="scaffold", source=p["id"]),
+                      dict(skill=p["skill"], level=top, kind="scaffold", source=p["id"])]
 
     # Spaced review: mastered skills, least recently seen first.
     mastered = sorted((r for r in levels.values() if r["mastered"]),
