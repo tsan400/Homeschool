@@ -129,6 +129,29 @@ def mult_multi(level, rng):
     return Problem(f"${a} times {b} =$", str(a * b), steps=steps)
 
 
+def division_steps(n: int, d: int) -> list[str]:
+    """Long division written out the way it's taught: divide, multiply, subtract, bring down,
+    one digit at a time, with a check at the end."""
+    digits, i = str(n), 0
+    cur = int(digits[0])
+    while cur < d and i < len(digits) - 1:  # the first part has to be big enough to divide
+        i += 1
+        cur = cur * 10 + int(digits[i])
+    small = [digits[:k] for k in range(1, i + 1)]
+    steps = [f"{' and '.join(small)} {'is' if len(small) == 1 else 'are'} smaller than {d}, so start with {cur}."] if small else []
+    while True:
+        q, i = cur // d, i + 1
+        r = cur - q * d
+        step = (f"*Divide* ${cur} div {d} = {q}$, *multiply* ${q} times {d} = {q * d}$, "
+                f"*subtract* ${cur} - {q * d} = {r}$.")
+        if i == len(digits):
+            steps.append(step + (f" Nothing left to bring down, so {r} is the remainder." if r else " Nothing left over."))
+            break
+        steps.append(step + f" *Bring down* the {digits[i]} to make {r * 10 + int(digits[i])}.")
+        cur = r * 10 + int(digits[i])
+    return steps
+
+
 @skill
 def long_div(level, rng):
     if level == 5:
@@ -140,10 +163,8 @@ def long_div(level, rng):
     r = 0 if level == 1 else rng.randint(0 if level > 2 else 1, d - 1)
     n = d * q + r
     ans = f"{q} R{r}" if r else str(q)
-    return Problem(f"${n} div {d} =$", ans, form="remainder", hint="whole number, with remainder written like 12 R3", steps=[
-        f"Divide step by step: how many {d}s fit into each part of {n}, left to right?",
-        f"${d} times {q} = {d * q}$" + (f", and ${n} - {d * q} = {r}$ left over." if r else "."),
-        f"Answer: {ans}"])
+    return Problem(f"${n} div {d} =$", ans, form="remainder", hint="whole number, with remainder written like 12 R3",
+                   steps=division_steps(n, d) + [f"Check: ${q} times {d}" + (f" + {r}" if r else "") + f" = {n}$"])
 
 
 # ---------- fractions ----------
