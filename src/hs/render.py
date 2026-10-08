@@ -12,6 +12,7 @@ from datetime import date as Date
 from pathlib import Path
 
 import cv2
+import numpy as np
 import pypdfium2 as pdfium
 import segno
 import typst
@@ -20,6 +21,7 @@ from hs import config, db, layout as L, readings, words
 
 FONT_DIR = Path(__file__).parent / "fonts"
 FONTS = '("Nunito", "DejaVu Sans")'
+READING_X = 70  # side margins of a reading's text
 INK, MUTED, HAIR, LINE = "#1a1a1a", "#6b6b6b", "#d4d4d4", "#333333"
 # One accent per subject. Black and white for now; a colour here shows up in that subject's
 # labels, badges and rules.
@@ -323,22 +325,31 @@ def reading_body(r: dict, accent: str) -> str:
 
 def reading_section(r: dict, accent: str, frame: str = "") -> str:
     """A reading set as flowing book text, over as many pages as it needs."""
-    return (f"#page(margin: (top: 104pt, bottom: 82pt, x: 70pt), background: {frame or 'none'})[\n"
+    return (f"#page(margin: (top: 104pt, bottom: 82pt, x: {READING_X}pt), background: {frame or 'none'})[\n"
             "#set text(font: \"Literata\", size: 12.5pt)\n"
             "#set par(justify: true, leading: 0.68em, spacing: 0.75em, first-line-indent: 1.2em)\n"
             + reading_body(r, accent) + "\n]\n")
 
 
-def narration_page(r: dict, accent: str) -> str:
+def text_end(page) -> float:
+    """How far down a laid-out page (pdfium, drawn without its frame) the text reaches, in points."""
+    ink = np.where((np.array(page.render(scale=1, grayscale=True).to_pil().convert("L")) < 200).any(axis=1))[0]
+    return float(ink.max() + 1) if ink.size else 0.0
+
+
+def narration_page(r: dict, accent: str, top: float = L.NARRATION_TOP, x: float = 56) -> str:
+    """"Tell it back" and the writing lines: a page of their own, or (with `top` and `x`) under
+    a chapter that ended high on its last page."""
     title = r["title"].partition(": ")[2] or r["title"]
-    out = at(56, 102, f"#block(width: {L.PAGE_W - 112}pt)[#stack(spacing: 8pt, "
+    w = L.PAGE_W - 2 * x
+    out = at(x, top - L.NARRATION_HEAD, f"#block(width: {w}pt)[#stack(spacing: 8pt, "
                       f"[#text(size: 17pt, weight: 800)[Tell it back]], "
                       f"[#text(size: 12pt)[#text(weight: 700, fill: {col(accent)})[{esc(r['book'])}] · {esc(title)}]], "
                       f"[#text(size: 10pt, fill: {col(MUTED)})[Tell what you read in your own words. Say it out loud to a parent, "
                       f"or write it on the lines: who, where, what happened first and next. You may draw a picture too.]])]")
-    y = L.NARRATION_TOP
+    y = top
     while y < L.BODY_BOTTOM:
-        out += at(56, y, f"#line(length: {L.PAGE_W - 112}pt, stroke: 0.6pt + rgb(\"#a3abb4\"))")
+        out += at(x, y, f"#line(length: {w}pt, stroke: 0.6pt + rgb(\"#a3abb4\"))")
         y += L.LINE_GAP
     return out
 
@@ -388,17 +399,22 @@ def compile_typ(source: str, build: Path, out: Path):
 
 def number_pages(con, ws, build: Path) -> list[dict]:
     """Readings flow over however many pages they need, so count them (by laying each one out on
-    its own) and give every page its final number. Math pages come first and keep theirs."""
-    pages = [pg for pg in json.loads(ws["pages"]) if pg["kind"] in ("examples", "problems")]
+    its own) and give every page its final number. Math pages come first and keep theirs.
+    A chapter that ends high on its last page takes its narration lines there, under the text,
+    instead of on a page of their own."""
+    pages, room = [pg for pg in json.loads(ws["pages"]) if pg["kind"] in ("examples", "problems")], None
     for pg in json.loads(ws["pages"]):
         if pg["kind"] == "reading":
             compile_typ(HEADER + reading_section(readings.reading(pg["item"]), ACCENT[pg["subject"]]), build, build / "count.pdf")
-            n = len(pdfium.PdfDocument((build / "count.pdf").read_bytes()))
-            pages.append(pg | {"page": len(pages) + 1, "pages": n})
+            doc = pdfium.PdfDocument((build / "count.pdf").read_bytes())
+            room = L.narration_after(text_end(doc[len(doc) - 1]))
+            pages.append(pg | {"page": len(pages) + 1, "pages": len(doc)})
         elif pg["kind"] == "narration":
-            page = pages[-1]["page"] + pages[-1]["pages"]
-            pages.append(pg | {"page": page})
-            con.execute("UPDATE assignment SET page=? WHERE worksheet_id=? AND subject=?", (page, ws["id"], pg["subject"]))
+            last = pages[-1]["page"] + pages[-1]["pages"] - 1
+            pg = {k: v for k, v in pg.items() if k != "lines_top"}
+            pg |= {"page": last, "lines_top": room} if room else {"page": last + 1}
+            pages.append(pg)
+            con.execute("UPDATE assignment SET page=? WHERE worksheet_id=? AND subject=?", (pg["page"], ws["id"], pg["subject"]))
     con.execute("UPDATE worksheet SET pages=? WHERE id=?", (json.dumps(pages), ws["id"]))
     con.commit()
     return pages
@@ -427,7 +443,8 @@ def render(con, ws_id: str) -> tuple[bytes, bytes]:
         for icon in ("sun", "partly", "cloud", "fog", "drizzle", "rain", "snow", "storm"):
             (build / f"w-{icon}.svg").write_text(weather_svg(icon))
         pages = number_pages(con, ws, build)
-        total = pages[-1]["page"] + pages[-1].get("pages", 1) - 1
+        total = max(pg["page"] + pg.get("pages", 1) - 1 for pg in pages)
+        under = {pg["subject"]: pg["lines_top"] for pg in pages if pg.get("lines_top")}
         for n in range(1, total + 1):
             (build / f"qr{n}.svg").write_text(qr_svg(L.qr_payload(ws["id"], n)))
         if "french" in extras and (url := readings.lesson_info(extras["french"]["item"])["url"]):
@@ -436,9 +453,14 @@ def render(con, ws_id: str) -> tuple[bytes, bytes]:
         for pg in pages:
             accent = ACCENT.get(pg.get("subject"), ACCENT["math"])
             if pg["kind"] == "reading":
-                frame = "context [\n" + page_frame(ws, "counter(page).get().first()", total, name,
-                                                   readings.SUBJECTS[pg["subject"]], accent) + "]"
-                parts.append(reading_section(readings.reading(pg["item"]), accent, frame))
+                here = "counter(page).get().first()"
+                frame = page_frame(ws, here, total, name, readings.SUBJECTS[pg["subject"]], accent)
+                if top := under.get(pg["subject"]):  # the chapter ends high: narrate under it
+                    frame += (f"#if {here} == {pg['page'] + pg['pages'] - 1} [\n"
+                              f"{narration_page(readings.reading(pg['item']), accent, top, READING_X)}]\n")
+                parts.append(reading_section(readings.reading(pg["item"]), accent, "context [\n" + frame + "]"))
+                continue
+            if pg.get("lines_top"):  # drawn under its chapter, above
                 continue
             label_ = "Narration" if pg["kind"] == "narration" else subject
             src = page_frame(ws, pg["page"], total, name, label_, accent)

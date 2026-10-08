@@ -2,8 +2,9 @@
 
 Each AO week has a history chapter, two science chapters and a nature-lore reading. They go out
 in order, one subject per weekday (settings: ao.days), so a missed day just shifts the rest
-along instead of skipping a reading. The reading is printed in the packet with a narration page
-after it; the child tells it back, out loud or in writing. French is an audio lesson, done by ear
+along instead of skipping a reading. The reading is printed in the packet with narration lines
+after it, under the chapter's end when there's room or else on a page of their own; the child
+tells it back, out loud or in writing. French is an audio lesson, done by ear
 first in the Charlotte Mason way, with a checkbox on the packet.
 """
 

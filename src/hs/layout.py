@@ -30,6 +30,22 @@ WEATHER = (440, 102, 132, 84)   # x, y, w, h
 FIRST_TOP = max(WORD[1] + WORD[3], WEATHER[1] + WEATHER[3]) + 10
 
 NARRATION_TOP, LINE_GAP = 200, 30  # writing lines on a narration page
+NARRATION_HEAD = 98                # its heading starts this far above the first line
+NARRATION_MIN_LINES = 8            # a chapter leaving room for this many lines on its last page
+                                   # takes its narration there, not on a page of its own
+
+
+def narration_after(text_end: float) -> float | None:
+    """Where the writing lines start if the narration goes under a chapter whose text ends
+    `text_end` points down its last page, or None if fewer than NARRATION_MIN_LINES fit there."""
+    top = text_end + LINE_GAP + NARRATION_HEAD
+    return top if (BODY_BOTTOM - top) / LINE_GAP > NARRATION_MIN_LINES - 1 else None
+
+
+def narration_lines(pages: list[dict]) -> dict[int, float]:
+    """{page: y of its first writing line} for each page a child narrates on: a narration page,
+    or the last page of a chapter that ended high enough to share it."""
+    return {pg["page"]: pg.get("lines_top", NARRATION_TOP) for pg in pages if pg["kind"] == "narration"}
 
 
 def slot_h(slots: int, top: float = BODY_TOP) -> float:

@@ -104,10 +104,12 @@ def grade_scan(con, family_id: int, data: bytes, transcribe=read.transcribe) -> 
         scanned_pages = set(json.loads(ws["scanned_pages"]))
         printed = pdfium.PdfDocument(vault.get(con, family_id, packets.packet_name(ws_id)))
         layout = {pg["page"]: (pg.get("slots", L.LEGACY_SLOTS), pg.get("top", L.BODY_TOP)) for pg in json.loads(ws["pages"])}
+        lines = L.narration_lines(json.loads(ws["pages"]))
         extras = db.assignments(con, ws_id)
         for page in pages:
             n = page.qr["page"]
             page.slots, page.top = layout.get(n, (L.LEGACY_SLOTS, L.BODY_TOP))
+            page.lines_top = lines.get(n, L.NARRATION_TOP)
             page.blank = np.array(printed[n - 1].render(scale=page.scale, grayscale=True).to_pil().convert("L"))
             vault.put(con, family_id, page_name(ws_id, n), page.jpeg())
             scanned_pages.add(n)

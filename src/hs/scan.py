@@ -35,6 +35,7 @@ class Page:
     blank: np.ndarray | None = None  # the same page as printed, rendered at the same scale
     slots: int = L.LEGACY_SLOTS      # problems on this page, from the packet's layout
     top: float = L.BODY_TOP          # where they start (lower on page 1, under the word and weather)
+    lines_top: float = L.NARRATION_TOP  # first narration line (higher when it shares a chapter's last page)
     _paper_map: np.ndarray | None = None
 
     def paper_map(self) -> np.ndarray:
@@ -85,8 +86,8 @@ class Page:
         return float(added[k:-k, k:-k].mean())
 
     def writing(self) -> float:
-        """Share of a narration page's lined area covered by the child's ink."""
-        top = L.NARRATION_TOP - L.LINE_GAP
+        """Share of the narration lines' area covered by the child's ink."""
+        top = self.lines_top - L.LINE_GAP
         return float(self.added_ink(56, top, L.PAGE_W - 112, L.BODY_BOTTOM - top).mean())
 
     def answer_png(self, slot: int) -> bytes:

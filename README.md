@@ -116,8 +116,10 @@ A child with an AmblesideOnline year set on the Family page gets that year's rea
 order, one a day: history on Monday (*This Country of Ours*), science on Tuesday and Thursday
 (Fabre's *Story-Book of Science*), and nature lore on Wednesday (*Madam How and Lady Why*).
 Friday is math and French only. The days are set in `settings.yaml` under `ao.days`.
-All three books are public domain. The chapter is printed in the packet and followed by a
-narration page, which the child can write on or skip by telling it back out loud. A missed
+All three books are public domain. The chapter is printed in the packet, followed by "Tell it
+back" and lines for a written narration; telling it back out loud counts too. When a chapter ends
+high on its last page, with room for at least 8 lines, the narration goes under it there instead
+of on a page of its own. A missed
 day doesn't skip a reading: the next one goes out on the next matching weekday.
 
 `content/ao/year4/` is built from the Project Gutenberg texts by `scripts/build_ao.py`,

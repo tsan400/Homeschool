@@ -42,9 +42,36 @@ def test_reading_pages_are_numbered_after_the_math(con, ao_kid):
     assert kinds[-2:] == ["reading", "narration"] and set(kinds[:-2]) == {"problems"}
     reading, narration = pages[-2:]
     assert reading["pages"] >= 2 and narration["page"] == reading["page"] + reading["pages"]
+    assert "lines_top" not in narration          # the chapter fills its last page: narration gets its own
     assert db.assignments(con, ws_id)["history"]["page"] == narration["page"]
     import pypdfium2 as pdfium
     assert len(pdfium.PdfDocument(vault.get(con, fid, packets.packet_name(ws_id)))) == narration["page"]
+
+
+def test_a_chapter_that_ends_high_takes_its_narration_under_it(con, ao_kid):
+    """Fabre's first chapter ends two lines into its last page, so "Tell it back" and the
+    writing lines go under it there, and writing on them still counts as narrated."""
+    import pypdfium2 as pdfium
+    fid, sid = ao_kid
+    ws_id = packets.make(con, sid, WEEK[1])
+    pages = json.loads(db.worksheet(con, ws_id)["pages"])
+    reading, narration = pages[-2:]
+    last = reading["page"] + reading["pages"] - 1
+    assert narration["page"] == last and narration["lines_top"] < 300
+    assert db.assignments(con, ws_id)["science"]["page"] == last
+    packet = vault.get(con, fid, packets.packet_name(ws_id))
+    assert len(pdfium.PdfDocument(packet)) == last   # no page of its own
+    imgs = fill_in(packet, {}, {}, writing={last: ["Uncle Paul reads in a big book", "and the children listen."]},
+                   lines_at=L.narration_lines(pages))
+    uid = jobs.submit(con, fid, "scan.pdf", to_pdf([phone_scan(imgs[last - 1], 5)]))
+    jobs.process(con, uid, lambda items: {})
+    assert db.assignments(con, ws_id)["science"]["done"] == 1
+
+
+def test_narration_moves_up_only_when_enough_lines_fit():
+    assert L.narration_after(133) == 133 + L.LINE_GAP + L.NARRATION_HEAD
+    assert L.narration_after(380) is not None           # eight lines still fit
+    assert L.narration_after(400) is None and L.narration_after(603) is None
 
 
 def test_french_moves_on_once_marked_done(con, ao_kid):
